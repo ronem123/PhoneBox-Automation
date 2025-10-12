@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NepalTrialpass"
+rootProject.name = "Phone Box App"
 include(":app")
  
