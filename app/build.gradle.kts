@@ -10,11 +10,11 @@ plugins {
 
 
 android {
-    namespace = "com.ram.mandal.nepaldrivingliscense"
+    namespace = "com.phone_box_app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.ram.mandal.nepaldrivingliscense"
+        applicationId = "com.phone_box_app"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -118,6 +118,4 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.store)
 
-    //google ad
-    implementation(libs.google.ad)
 }
