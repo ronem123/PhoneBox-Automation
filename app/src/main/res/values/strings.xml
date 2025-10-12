@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Nepal Trial Pass</string>
+    <string name="loading">Loading…</string>
+
+    <string name="my_google_ad_app_id">ca-app-pub-8090034802371979~9459766448</string>
+    <string name="project_server_api_key">AIzaSyDoTcZK9BSjW-_T1Fze-Ud78UaU-ZVVE2Y</string>
+    <string name="banner_add">ca-app-pub-8090034802371979/1936499647</string>
+    <string name="banner_add_new">ca-app-pub-8090034802371979/2802761225</string>
+    <string name="banner_add_test">ca-app-pub-3940256099942544/6300978111</string>
+    <string name="interistitial_add">ca-app-pub-8090034802371979/3413232846</string>
+    <string name="test_device">49D2286CE7FAFBD093B67D4B68EEB61B</string>
+</resources>
