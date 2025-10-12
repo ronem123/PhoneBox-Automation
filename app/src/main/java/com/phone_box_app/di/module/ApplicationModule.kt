@@ -41,7 +41,7 @@ class ApplicationModule {
 
     @BaseUrl
     @Provides
-    fun provideBaseUrl(): String = "https://www.nepalitools.com/"
+    fun provideBaseUrl(): String = "https://phonebox.tarifica.online/api/v1/"
 
 
     @Singleton
