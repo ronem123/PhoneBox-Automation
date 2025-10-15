@@ -6,10 +6,15 @@ import com.phone_box_app.core.dispatcher.DispatcherProvider
 import com.phone_box_app.core.exception.NoInternetException
 import com.phone_box_app.core.logger.Logger
 import com.phone_box_app.core.networkhelper.NetworkHelper
+import com.phone_box_app.data.model.DeviceRegistrationData
+import com.phone_box_app.data.model.RegisterDeviceResponse
 import com.phone_box_app.data.model.ScheduledTaskResponse
 import com.phone_box_app.data.repository.ArcRepository
+import com.phone_box_app.data.room.deviceinfo.DeviceInfoEntity
 import com.phone_box_app.ui.UIState
-import com.phone_box_app.util.getMyDeviceId
+import com.phone_box_app.util.getMyDeviceModel
+import com.phone_box_app.util.getMyDeviceName
+import com.phone_box_app.util.getMyDeviceSimNumber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,18 +47,81 @@ class HomeViewModel @Inject constructor(
     val scheduledTaskResponse: StateFlow<UIState<ScheduledTaskResponse>> = _scheduledTaskResponse
 
 
-//    init {
-//        getNews()
-//    }
+    /**
+     * Holds the Response from the remote api and store in the private variable [_registerDeviceResponse]
+     * interaction is performed on [registerDeviceResponse] which is just a StateFlow and it cannot be changed
+     * from the other world
+     */
+    private val _registerDeviceResponse =
+        MutableStateFlow<UIState<RegisterDeviceResponse>>(UIState.Empty)
+    val registerDeviceResponse: StateFlow<UIState<RegisterDeviceResponse>> = _registerDeviceResponse
 
-    fun getNews() {
+
+    private val _deviceInfo = MutableStateFlow<DeviceInfoEntity?>(null)
+    val deviceInfo: StateFlow<DeviceInfoEntity?> = _deviceInfo
+
+    init {
+        viewModelScope.launch {
+            _deviceInfo.value = repository.getLocalDeviceInfo()
+        }
+    }
+
+    /**
+     * Return the user entered phone-number
+     */
+    fun getPhoneNumber(): String = ""
+
+
+    /**
+     * Returns the self device information
+     */
+    fun getDeviceRegisterData(
+        deviceId: String,
+        countryCode: String,
+        mobileNumber: String
+    ): DeviceRegistrationData {
+
+        return DeviceRegistrationData(
+            countryCode = countryCode,
+            deviceId = deviceId,
+            deviceName = getMyDeviceName(),
+            deviceModel = getMyDeviceModel(),
+            deviceSimNumber = mobileNumber,
+            profileName = getPhoneNumber(),
+        )
+    }
+
+    /**
+     * Method to register new device when its first time
+     */
+    fun registerDevice(deviceId: String, countryCode: String, mobileNumber: String) {
+        viewModelScope.launch {
+            if (!networkHelper.isNetworkConnected()) {
+                _registerDeviceResponse.emit(UIState.Failure(throwable = NoInternetException()))
+                return@launch
+            }
+            repository.registerDevice(getDeviceRegisterData(deviceId, countryCode, mobileNumber))
+                .onStart { _registerDeviceResponse.emit(UIState.Loading) }
+                .flowOn(dispatcherProvider.io)
+                .catch { _registerDeviceResponse.emit(UIState.Failure(it)) }
+                .collect {
+                    _registerDeviceResponse.emit(UIState.Success(it))
+                    _deviceInfo.value = repository.getLocalDeviceInfo()
+                }
+        }
+    }
+
+    /**
+     * Get list of scheduled tasks
+     */
+    fun getScheduledTask(deviceId: String) {
         viewModelScope.launch {
             if (!networkHelper.isNetworkConnected()) {
                 _scheduledTaskResponse.emit(UIState.Failure(throwable = NoInternetException()))
                 return@launch
             }
 
-            repository.getScheduledTask(deviceId = getMyDeviceId())
+            repository.getScheduledTask(deviceId = deviceId)
                 .onStart { _scheduledTaskResponse.emit(UIState.Loading) }
                 .flowOn(dispatcherProvider.io)
                 .catch { _scheduledTaskResponse.emit(UIState.Failure(it)) }
@@ -63,18 +131,6 @@ class HomeViewModel @Inject constructor(
                 }
         }
     }
-
-    fun getHomeContent() {
-        viewModelScope.launch {
-            if (!networkHelper.isNetworkConnected()) {
-                _scheduledTaskResponse.emit(UIState.Failure(throwable = NoInternetException()))
-                return@launch
-            }
-
-
-        }
-    }
-
 }
 
 

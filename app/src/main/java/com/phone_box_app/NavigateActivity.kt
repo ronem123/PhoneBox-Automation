@@ -10,7 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import com.phone_box_app.ui.components.CommonToolbar
 import com.phone_box_app.ui.navhosts.SetUpNavActivityNavGraph
 import com.phone_box_app.ui.routes.AppRoutes
-import com.phone_box_app.ui.theme.DigitalNepaliToolsTheme
+import com.phone_box_app.ui.theme.ArchTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 
@@ -51,7 +51,7 @@ class NavigateActivity : ComponentActivity() {
             AppRoutes.Home.route
 
         setContent {
-            DigitalNepaliToolsTheme {
+            ArchTheme {
                 val navController = rememberNavController()
                 Scaffold(
                     topBar = {

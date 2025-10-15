@@ -8,15 +8,17 @@ import com.google.gson.annotations.SerializedName
  * @System: Apple M1 Pro
  */
 
-data class DeviceInfoData(
+data class DeviceRegistrationData(
     @SerializedName("device_id")
-    val deviceId: String?,
+    val deviceId: String,
     @SerializedName("device_model")
-    val deviceModel: String?,
+    val deviceModel: String,
     @SerializedName("device_name")
-    val deviceName: String?,
+    val deviceName: String,
+    @SerializedName("country_code")
+    val countryCode: String,
     @SerializedName("device_sim_number")
-    val deviceSimNumber: String?,
+    val deviceSimNumber: String,
     @SerializedName("profile_name")
-    val profileName: String?
+    val profileName: String
 )

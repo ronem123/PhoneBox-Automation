@@ -37,7 +37,7 @@ import com.phone_box_app.data.network.ApiService
 import com.phone_box_app.ui.routes.NavigationRoutes
 import com.phone_box_app.ui.screens.home.HomeScreen
 import com.phone_box_app.ui.theme.AppThemeColor
-import com.phone_box_app.ui.theme.DigitalNepaliToolsTheme
+import com.phone_box_app.ui.theme.ArchTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -58,7 +58,7 @@ class HomeActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            DigitalNepaliToolsTheme {
+            ArchTheme {
                 MainScreen()
             }
         }
@@ -99,9 +99,9 @@ fun MainScreen() {
                     )
                 )
             },
-            bottomBar = {
-                BottomNavigationBar(navController)
-            }
+//            bottomBar = {
+//                BottomNavigationBar(navController)
+//            }
         ) { innerPadding ->
             NavHost(
                 navController = navController,
@@ -180,7 +180,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    DigitalNepaliToolsTheme {
+    ArchTheme {
         Greeting("Android")
     }
 }

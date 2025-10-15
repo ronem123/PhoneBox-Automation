@@ -118,4 +118,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.store)
 
+    //permission
+    implementation(libs.permissions.compose)
+
 }

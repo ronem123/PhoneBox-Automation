@@ -25,6 +25,7 @@ youtubePlayerCompose = "2023.12.20"
 firebaseBom = "33.4.0"
 gmsGoogleServices = "4.4.2"
 google_ad = "24.5.0"
+permissionsCompose = "0.35.2-beta"
 
 [libraries]
 # Core
@@ -92,6 +93,9 @@ firebase-store = { module = "com.google.firebase:firebase-firestore" }
 
 #Google ad
 google-ad = { group = "com.google.android.gms",name="play-services-ads",version.ref = "google_ad" }
+
+permissions-compose = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "permissionsCompose" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

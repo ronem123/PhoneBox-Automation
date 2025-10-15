@@ -10,15 +10,21 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.phone_box_app.data.model.ScheduledTaskResponse
+import com.phone_box_app.data.model.MobileNumberInfo
 import com.phone_box_app.ui.UIState
 import com.phone_box_app.ui.components.ErrorComposableLayout
 import com.phone_box_app.ui.components.LoadingComposeLayout
+import com.phone_box_app.ui.components.arch_dialogs.MobileNumberInputDialog
 import com.phone_box_app.ui.theme.AppThemeColor
+import com.phone_box_app.util.RequestAppPermissions
+import com.phone_box_app.util.getMyDeviceId
 
 
 /**
@@ -31,41 +37,72 @@ import com.phone_box_app.ui.theme.AppThemeColor
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-    HomeContent(viewModel)
+
+    val context = LocalContext.current
+    var isPermissionGranted by remember { mutableStateOf(false) }
+
+    if (!isPermissionGranted) {
+        RequestAppPermissions(
+            onAllPermissionsGranted = { isPermissionGranted = true }
+        )
+    } else {
+        HomeContent(viewModel, context)
+    }
+
 }
 
 
 @Composable
-fun HomeContent(viewModel: HomeViewModel, context: Context = LocalContext.current) {
-    val scheduledTaskState: UIState<ScheduledTaskResponse> by viewModel.scheduledTaskResponse.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) {
-        viewModel.getNews()
+fun HomeContent(viewModel: HomeViewModel, context: Context) {
+
+    var hasAskedPermission by remember { mutableStateOf(false) }
+    var mobileNumberInfo by remember { mutableStateOf(MobileNumberInfo("", "")) }
+
+    val deviceInfoState by viewModel.deviceInfo.collectAsStateWithLifecycle()
+    val deviceRegisterState by viewModel.registerDeviceResponse.collectAsStateWithLifecycle()
+
+    var showMobileDialog by remember(deviceInfoState, hasAskedPermission) {
+        mutableStateOf(hasAskedPermission && deviceInfoState?.isRegistered != true)
     }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(AppThemeColor.white)
-            .verticalScroll(rememberScrollState())
-    ) {
-        when (scheduledTaskState) {
-            is UIState.Loading -> {
-                LoadingComposeLayout()
+
+
+    if (!hasAskedPermission) {
+        // Ask permission only once
+        RequestAppPermissions(
+            onAllPermissionsGranted = {
+                hasAskedPermission = true
             }
-
-            is UIState.Success -> {
-                NotificationLayout()
+        )
+    } else if (showMobileDialog) {
+        MobileNumberInputDialog(
+            onConfirm = { mobileNumberData ->
+                showMobileDialog = false
+                mobileNumberInfo = mobileNumberData
+                viewModel.registerDevice(
+                    deviceId = getMyDeviceId(context),
+                    countryCode = mobileNumberInfo.countryCode,
+                    mobileNumber = mobileNumberInfo.mobileNumber
+                )
+            },
+            onDismiss = {
             }
+        )
+    } else {
+        // Show main UI only after permissions + number input
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(AppThemeColor.white)
+                .verticalScroll(rememberScrollState())
+        ) {
+            when {
+                deviceRegisterState is UIState.Loading -> LoadingComposeLayout()
+                deviceRegisterState is UIState.Success
+                        || deviceInfoState?.isRegistered == true -> NotificationLayout()
 
-            is UIState.Failure -> {
-                ErrorComposableLayout(errorMessage = "Error Occurred")
-            }
-
-            is UIState.Empty -> {
-                Log.v("TAG", "Empty")
-
+                deviceRegisterState is UIState.Failure -> ErrorComposableLayout(errorMessage = "Error Occurred")
+                deviceRegisterState is UIState.Empty -> Log.v("TAG", "Empty")
             }
         }
-
-
     }
 }

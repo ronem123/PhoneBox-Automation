@@ -1,7 +1,9 @@
 package com.phone_box_app.di.module
 
 import android.content.Context
+import androidx.room.Room
 import androidx.work.WorkManager
+import com.phone_box_app.BuildConfig
 import com.phone_box_app.core.dispatcher.DefaultDispatcherProvider
 import com.phone_box_app.core.dispatcher.DispatcherProvider
 import com.phone_box_app.core.logger.AppLogger
@@ -10,6 +12,8 @@ import com.phone_box_app.core.networkhelper.NetworkHelper
 import com.phone_box_app.core.networkhelper.NetworkHelperImpl
 import com.phone_box_app.data.network.ApiService
 import com.phone_box_app.data.network.PBHeaderInterceptor
+import com.phone_box_app.data.room.ArcDatabase
+import com.phone_box_app.data.room.deviceinfo.DeviceInfoDao
 import com.phone_box_app.di.ApiKey
 import com.phone_box_app.di.BaseUrl
 import dagger.Module
@@ -18,9 +22,11 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
+
 /**
  * Created by Ram Mandal on 12/10/2025
  * @System: Apple M1 Pro
@@ -56,12 +62,12 @@ class ApplicationModule {
             .Builder()
             .addInterceptor(apiKeyInterceptor)
 
-//        if (BuildConfig.DEBUG) {
-//            val loggingInterceptor = HttpLoggingInterceptor().apply {
-//                level = HttpLoggingInterceptor.Level.BODY
-//            }
-//            client.addInterceptor(loggingInterceptor)
-//        }
+        if (BuildConfig.DEBUG) {
+            val loggingInterceptor = HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            }
+            client.addInterceptor(loggingInterceptor)
+        }
 
         return Retrofit
             .Builder()
@@ -96,5 +102,20 @@ class ApplicationModule {
     ): WorkManager {
         return WorkManager.getInstance(context)
     }
+
+    @Provides
+    @Singleton
+    fun provideDatabase(@ApplicationContext context: Context): ArcDatabase {
+        return Room.databaseBuilder(
+            context,
+            ArcDatabase::class.java,
+            "phone_box_db"
+        ).build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDeviceInfoDao(db: ArcDatabase): DeviceInfoDao = db.deviceInfoDao()
+
 
 }
