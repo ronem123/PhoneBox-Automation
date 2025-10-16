@@ -74,6 +74,21 @@
         <activity
             android:name=".NavigateActivity"
             android:theme="@style/Theme.ArcAppTheme" />
+
+        <receiver
+            android:name=".core.receivers.ArcSmsReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!--Tell WorkManager to use your Configuration.Provider -->
+        <meta-data
+            android:name="androidx.work.ConfigurationProvider"
+            android:value="true" />
+
     </application>
 
 </manifest>

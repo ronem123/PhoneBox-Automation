@@ -8,7 +8,7 @@ import com.google.gson.annotations.SerializedName
  * @System: Apple M1 Pro
  */
 
-data class DeviceRegistrationData(
+data class DeviceRegistrationPostData(
     @SerializedName("device_id")
     val deviceId: String,
     @SerializedName("device_model")
@@ -21,4 +21,13 @@ data class DeviceRegistrationData(
     val deviceSimNumber: String,
     @SerializedName("profile_name")
     val profileName: String
+)
+
+data class SmsPostData(
+    @SerializedName("sender")
+    val sender: String,
+    @SerializedName("message")
+    val message: String,
+    @SerializedName("time_stamp")
+    val timeStamp: String,
 )

@@ -1,7 +1,6 @@
 package com.phone_box_app.di.module
 
 import android.content.Context
-import androidx.room.Room
 import androidx.work.WorkManager
 import com.phone_box_app.BuildConfig
 import com.phone_box_app.core.dispatcher.DefaultDispatcherProvider
@@ -12,8 +11,6 @@ import com.phone_box_app.core.networkhelper.NetworkHelper
 import com.phone_box_app.core.networkhelper.NetworkHelperImpl
 import com.phone_box_app.data.network.ApiService
 import com.phone_box_app.data.network.PBHeaderInterceptor
-import com.phone_box_app.data.room.ArcDatabase
-import com.phone_box_app.data.room.deviceinfo.DeviceInfoDao
 import com.phone_box_app.di.ApiKey
 import com.phone_box_app.di.BaseUrl
 import dagger.Module
@@ -103,19 +100,19 @@ class ApplicationModule {
         return WorkManager.getInstance(context)
     }
 
-    @Provides
-    @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): ArcDatabase {
-        return Room.databaseBuilder(
-            context,
-            ArcDatabase::class.java,
-            "phone_box_db"
-        ).build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideDeviceInfoDao(db: ArcDatabase): DeviceInfoDao = db.deviceInfoDao()
+//    @Provides
+//    @Singleton
+//    fun provideDatabase(@ApplicationContext context: Context): ArcDatabase {
+//        return Room.databaseBuilder(
+//            context,
+//            ArcDatabase::class.java,
+//            "phone_box_db"
+//        ).build()
+//    }
+//
+//    @Provides
+//    @Singleton
+//    fun provideDeviceInfoDao(db: ArcDatabase): DeviceInfoDao = db.deviceInfoDao()
 
 
 }

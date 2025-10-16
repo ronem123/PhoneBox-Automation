@@ -6,7 +6,7 @@ import com.phone_box_app.core.dispatcher.DispatcherProvider
 import com.phone_box_app.core.exception.NoInternetException
 import com.phone_box_app.core.logger.Logger
 import com.phone_box_app.core.networkhelper.NetworkHelper
-import com.phone_box_app.data.model.DeviceRegistrationData
+import com.phone_box_app.data.model.DeviceRegistrationPostData
 import com.phone_box_app.data.model.RegisterDeviceResponse
 import com.phone_box_app.data.model.ScheduledTaskResponse
 import com.phone_box_app.data.repository.ArcRepository
@@ -79,9 +79,9 @@ class HomeViewModel @Inject constructor(
         deviceId: String,
         countryCode: String,
         mobileNumber: String
-    ): DeviceRegistrationData {
+    ): DeviceRegistrationPostData {
 
-        return DeviceRegistrationData(
+        return DeviceRegistrationPostData(
             countryCode = countryCode,
             deviceId = deviceId,
             deviceName = getMyDeviceName(),
