@@ -71,18 +71,18 @@ class ArcSmsReceiver : BroadcastReceiver() {
                             .setInputData(input)
                             .setConstraints(constraints)
                             .setBackoffCriteria(
-                                BackoffPolicy.EXPONENTIAL,
-                                30_000L,
-                                TimeUnit.MILLISECONDS
+                                backoffPolicy = BackoffPolicy.LINEAR,
+                                backoffDelay = 10_000L,
+                                timeUnit = TimeUnit.MILLISECONDS
                             )
-                            .addTag(SmsSyncWorker.TAG)
                             .build()
 
                         // Use unique work to avoid duplicates keyed by rowId
                         val uniqueName = "sms_sync_$rowId"
+
                         if (appContext is ArcApplication) {
                             WorkManager.getInstance(appContext)
-                                .enqueueUniqueWork(uniqueName, ExistingWorkPolicy.KEEP, workRequest)
+                                .enqueue(workRequest)
                         } else {
                             Log.e(
                                 "SmsReceiver",

@@ -84,10 +84,10 @@
             </intent-filter>
         </receiver>
 
-        <!--Tell WorkManager to use your Configuration.Provider -->
-        <meta-data
-            android:name="androidx.work.ConfigurationProvider"
-            android:value="true" />
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            tools:node="remove"/>
 
     </application>
 

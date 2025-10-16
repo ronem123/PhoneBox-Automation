@@ -3,7 +3,8 @@ package com.phone_box_app.core.workers
 import android.content.Context
 import android.util.Log
 import androidx.hilt.work.HiltWorker
-import androidx.work.*
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
 import com.phone_box_app.data.model.SmsPostData
 import com.phone_box_app.data.repository.ArcRepository
 import dagger.assisted.Assisted
@@ -17,12 +18,15 @@ import java.io.IOException
  * @System: Apple M1 Pro
  */
 
-@HiltWorker
-class SmsSyncWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted workerParams: WorkerParameters,
-    private val repository: ArcRepository
+class SmsSyncWorker(
+    appContext: Context,
+    workerParams: WorkerParameters,
+    private val arcRepository: ArcRepository
 ) : CoroutineWorker(appContext, workerParams) {
+
+    init {
+        Log.d(TAG, "SmsSyncWorker initialized successfully with Hilt")
+    }
 
     companion object {
         const val KEY_SMS_ID = "sms_id"
@@ -37,17 +41,17 @@ class SmsSyncWorker @AssistedInject constructor(
         }
 
         try {
-            val sms = repository.getSmsById(smsId)
+            val sms = arcRepository.getSmsById(smsId)
             if (sms == null) {
                 // Already removed or doesn't exist -> nothing to do
                 return@withContext Result.success()
             }
 
             // Optionally: mark attempt count to avoid infinite retries
-            repository.incrementSmsAttempts(smsId)
+            arcRepository.incrementSmsAttempts(smsId)
 
             // 1) Send to server
-            val success = repository.saveSmsLogToServer(
+            val success = arcRepository.saveSmsLogToServer(
                 SmsPostData(
                     sender = sms.sender,
                     message = sms.message,
@@ -56,7 +60,7 @@ class SmsSyncWorker @AssistedInject constructor(
             )
 
             // 2) On success, either mark as synced or delete
-            if (success) repository.deleteSms(smsId)
+            if (success) arcRepository.deleteSms(smsId)
 
             Log.d(TAG, "SMS (id=$smsId) uploaded successfully")
             Result.success()

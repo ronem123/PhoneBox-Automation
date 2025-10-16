@@ -1,15 +1,21 @@
 package com.phone_box_app
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ListenableWorker
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.WorkerFactory
+import androidx.work.WorkerParameters
 import com.phone_box_app.core.workers.PendingSmsSyncWorker
+import com.phone_box_app.core.workers.SmsSyncWorker
+import com.phone_box_app.data.repository.ArcRepository
 import dagger.hilt.android.HiltAndroidApp
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -23,20 +29,18 @@ import javax.inject.Inject
 class ArcApplication : Application(), Configuration.Provider {
 
     @Inject
-    lateinit var workerFactory: HiltWorkerFactory
+    lateinit var customSmsSyncWorkFactory: CustomSmsSyncWorkFactory
 
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .setMinimumLoggingLevel(android.util.Log.DEBUG)
+            .setWorkerFactory(customSmsSyncWorkFactory)
+            .setMinimumLoggingLevel(Log.DEBUG)
             .build()
 
 
     override fun onCreate() {
         super.onCreate()
-
-        Log.d("ArcApp", "HiltWorkerFactory active: ${this::workerFactory.isInitialized}")
 
         schedulePendingSmsSyncWork()
     }
@@ -59,4 +63,26 @@ class ArcApplication : Application(), Configuration.Provider {
             periodicWork
         )
     }
+}
+
+class CustomSmsSyncWorkFactory @Inject constructor(private val arcRepository: ArcRepository) :
+    WorkerFactory() {
+    override fun createWorker(
+        appContext: Context,
+        workerClassName: String,
+        workerParameters: WorkerParameters
+    ): ListenableWorker? {
+        return when (workerClassName) {
+            SmsSyncWorker::class.qualifiedName -> {
+                SmsSyncWorker(appContext, workerParameters, arcRepository)
+            }
+
+            PendingSmsSyncWorker::class.qualifiedName -> {
+                PendingSmsSyncWorker(appContext, workerParameters, arcRepository)
+            }
+
+            else -> null
+        }
+    }
+
 }

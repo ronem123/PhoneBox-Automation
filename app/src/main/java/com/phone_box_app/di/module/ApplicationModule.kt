@@ -49,7 +49,7 @@ class ApplicationModule {
 
     @Singleton
     @Provides
-    fun provideNetworkService(
+    fun provideArcApiService(
         @BaseUrl baseUrl: String,
         gsonFactory: GsonConverterFactory,
         apiKeyInterceptor: PBHeaderInterceptor

@@ -96,7 +96,6 @@ dependencies {
     implementation(libs.hilt.common)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.hilt.work)
-    kapt(libs.hilt.compiler)
 
     // Compose UI
     implementation(libs.androidx.activity.compose)
