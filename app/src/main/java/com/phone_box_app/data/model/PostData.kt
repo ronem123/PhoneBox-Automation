@@ -24,10 +24,12 @@ data class DeviceRegistrationPostData(
 )
 
 data class SmsPostData(
-    @SerializedName("sender")
-    val sender: String,
-    @SerializedName("message")
-    val message: String,
-    @SerializedName("time_stamp")
-    val timeStamp: String,
+    @SerializedName("device_id")
+    val deviceId: Int?,
+    @SerializedName("is_sent")
+    val isSent: Int?,
+    @SerializedName("sender_number")
+    val senderNumber: String?,
+    @SerializedName("sms")
+    val message: String?
 )

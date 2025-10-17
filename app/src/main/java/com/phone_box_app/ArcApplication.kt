@@ -43,6 +43,17 @@ class ArcApplication : Application(), Configuration.Provider {
         super.onCreate()
 
         schedulePendingSmsSyncWork()
+
+        WorkManager.getInstance(this)
+            .getWorkInfosForUniqueWorkLiveData("pending_sms_sync")
+            .observeForever {
+                it.forEach { workInfo ->
+                    Log.d(
+                        "WorkManagerStatus",
+                        "Work: ${workInfo.id} - ${workInfo.state} - ${workInfo.tags}"
+                    )
+                }
+            }
     }
 
     private fun schedulePendingSmsSyncWork() {
@@ -51,14 +62,16 @@ class ArcApplication : Application(), Configuration.Provider {
             .build()
 
         val periodicWork = PeriodicWorkRequestBuilder<PendingSmsSyncWorker>(
-            30, TimeUnit.MINUTES // minimum interval enforced by WorkManager
+            1, TimeUnit.MINUTES // minimum interval enforced by WorkManager
         )
             .setConstraints(constraints)
             .addTag("pending_sms_sync_periodic")
             .build()
 
+        val uniqueWorkerName = "pending_sms_sync"
+
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "pending_sms_sync",
+            uniqueWorkerName,
             ExistingPeriodicWorkPolicy.KEEP, // avoids rescheduling duplicate workers
             periodicWork
         )

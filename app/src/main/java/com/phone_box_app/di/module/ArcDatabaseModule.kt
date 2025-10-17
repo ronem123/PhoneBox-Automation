@@ -35,6 +35,6 @@ class ArcDatabaseModule {
 
     @Provides
     @Singleton
-    fun provideSmsLogDao(db: ArcDatabase): SmsLogDao = db.smsLogDao()
+    fun provideSmsLogDao(db: ArcDatabase):      SmsLogDao = db.smsLogDao()
 
 }

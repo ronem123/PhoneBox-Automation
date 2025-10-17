@@ -3,12 +3,12 @@ package com.phone_box_app.ui.screens.home
 import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,7 +48,6 @@ fun HomeScreen(
     } else {
         HomeContent(viewModel, context)
     }
-
 }
 
 
@@ -91,14 +90,15 @@ fun HomeContent(viewModel: HomeViewModel, context: Context) {
         // Show main UI only after permissions + number input
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(AppThemeColor.white)
-                .verticalScroll(rememberScrollState())
+                .fillMaxSize()
+                .background(AppThemeColor.grey5)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.Center
         ) {
             when {
                 deviceRegisterState is UIState.Loading -> LoadingComposeLayout()
                 deviceRegisterState is UIState.Success
-                        || deviceInfoState?.isRegistered == true -> NotificationLayout()
+                        || deviceInfoState?.isRegistered == true -> HomeContentLayout()
 
                 deviceRegisterState is UIState.Failure -> ErrorComposableLayout(errorMessage = "Error Occurred")
                 deviceRegisterState is UIState.Empty -> Log.v("TAG", "Empty")

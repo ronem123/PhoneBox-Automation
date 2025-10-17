@@ -57,6 +57,18 @@ class HomeViewModel @Inject constructor(
     val registerDeviceResponse: StateFlow<UIState<RegisterDeviceResponse>> = _registerDeviceResponse
 
 
+    /**
+     * Holds the Response from the remote api and store in the private variable [_deviceDetailResponse]
+     * interaction is performed on [deviceDetailResponse] which is just a StateFlow and it cannot be changed
+     * from the other world
+     */
+    private val _deviceDetailResponse =
+        MutableStateFlow<UIState<RegisterDeviceResponse>>(UIState.Empty)
+    val deviceDetailResponse: StateFlow<UIState<RegisterDeviceResponse>> = _deviceDetailResponse
+
+
+
+
     private val _deviceInfo = MutableStateFlow<DeviceInfoEntity?>(null)
     val deviceInfo: StateFlow<DeviceInfoEntity?> = _deviceInfo
 
@@ -110,6 +122,16 @@ class HomeViewModel @Inject constructor(
                 }
         }
     }
+
+//    /**
+//     * Get my DeviceId
+//     */
+//    fun getMyDeviceDetail(deviceId: String) {
+//        viewModelScope.launch {
+//            repository.
+//        }
+//    }
+
 
     /**
      * Get list of scheduled tasks

@@ -13,6 +13,7 @@ import androidx.room.PrimaryKey
 data class DeviceInfoEntity(
     @PrimaryKey val id: Int = 0,
     val deviceId: String,
+    val deviceIdInt: Int,
     val mobileNumber: String,
     val isRegistered: Boolean,
     val deviceModel: String,

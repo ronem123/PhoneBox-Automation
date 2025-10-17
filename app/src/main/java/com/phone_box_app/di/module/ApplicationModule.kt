@@ -100,19 +100,4 @@ class ApplicationModule {
         return WorkManager.getInstance(context)
     }
 
-//    @Provides
-//    @Singleton
-//    fun provideDatabase(@ApplicationContext context: Context): ArcDatabase {
-//        return Room.databaseBuilder(
-//            context,
-//            ArcDatabase::class.java,
-//            "phone_box_db"
-//        ).build()
-//    }
-//
-//    @Provides
-//    @Singleton
-//    fun provideDeviceInfoDao(db: ArcDatabase): DeviceInfoDao = db.deviceInfoDao()
-
-
 }

@@ -34,6 +34,7 @@ class ArcRepository @Inject constructor(
             deviceInfoDao.insertDeviceInfo(
                 DeviceInfoEntity(
                     deviceId = data.deviceId,
+                    deviceIdInt = response.deviceData?.id ?: 0,
                     mobileNumber = data.deviceSimNumber,
                     isRegistered = true,
                     deviceModel = data.deviceModel,
@@ -83,7 +84,7 @@ class ArcRepository @Inject constructor(
         return response.isSuccessful
     }
 
-    suspend fun getPendingSmsLog():List<SmsEntity>{
+    suspend fun getPendingSmsLog(): List<SmsEntity> {
         return smsLogDao.getPendingSms()
     }
 

@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit
  */
 class ArcSmsReceiver : BroadcastReceiver() {
 
+    private val TAG = "ArcSmsReceiver"
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent == null || context == null) return
 
@@ -48,7 +49,7 @@ class ArcSmsReceiver : BroadcastReceiver() {
                 val messageBody = sms.displayMessageBody ?: ""
                 val ts = System.currentTimeMillis()
 
-                Log.d("SmsReceiver", "SMS from=$sender body=$messageBody")
+                Log.d(TAG, "SMS from=$sender body=$messageBody")
 
                 // Insert to DB and enqueue worker in background coroutine
                 CoroutineScope(Dispatchers.IO).launch {
@@ -59,6 +60,8 @@ class ArcSmsReceiver : BroadcastReceiver() {
                             message = messageBody,
                             timeStamp = ts
                         )
+
+                        Log.v(TAG,"saved with rowId $rowId")
 
                         // 2) Build WorkRequest with smsId
                         val input = workDataOf(SmsSyncWorker.KEY_SMS_ID to rowId)

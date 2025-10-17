@@ -35,27 +35,30 @@ class SmsSyncWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val smsId = inputData.getLong(KEY_SMS_ID, -1L)
+        Log.v(TAG, "read input for smsID: $smsId")
+
         if (smsId <= 0) {
             Log.w(TAG, "Invalid smsId provided to worker: $smsId")
             return@withContext Result.failure()
         }
 
         try {
+            //get DeviceIdInt from local db
+            val deviceIdInt = arcRepository.getLocalDeviceInfo()?.deviceIdInt
+
             val sms = arcRepository.getSmsById(smsId)
             if (sms == null) {
                 // Already removed or doesn't exist -> nothing to do
                 return@withContext Result.success()
             }
 
-            // Optionally: mark attempt count to avoid infinite retries
-            arcRepository.incrementSmsAttempts(smsId)
-
             // 1) Send to server
             val success = arcRepository.saveSmsLogToServer(
                 SmsPostData(
-                    sender = sms.sender,
-                    message = sms.message,
-                    timeStamp = sms.timeStamp.toString()
+                    deviceId = deviceIdInt,
+                    isSent = 1,
+                    senderNumber = sms.sender,
+                    message = sms.message
                 )
             )
 

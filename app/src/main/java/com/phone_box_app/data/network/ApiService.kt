@@ -15,10 +15,12 @@ interface ApiService {
     suspend fun registerDevice(@Body post: DeviceRegistrationPostData): RegisterDeviceResponse
 
     @GET("getScheduledTasks")
-    suspend fun getTask(@Query("device_id") deviceId: String): ScheduledTaskResponse
-
+    suspend fun getTask(@Query(value = "device_id") deviceId: String): ScheduledTaskResponse
 
     @POST("saveSms")
     suspend fun saveSms(@Body post: SmsPostData): Response<Unit>
+
+    @GET("deviceDetail")
+    suspend fun getDeviceDetail(@Query(value = "device_id") deviceId: String): Response<Unit>
 
 }
