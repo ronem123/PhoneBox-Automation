@@ -11,16 +11,18 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 
 interface ApiService {
-    @POST("registerDevice")
+    @POST("v1/registerDevice")
     suspend fun registerDevice(@Body post: DeviceRegistrationPostData): RegisterDeviceResponse
 
-    @GET("getScheduledTasks")
-    suspend fun getTask(@Query(value = "device_id") deviceId: String): ScheduledTaskResponse
+    @GET("v2/getAllActiveTasks")
+    suspend fun getTask(@Query(value = "device_id") deviceId: Int): ScheduledTaskResponse
 
-    @POST("saveSms")
+
+    @POST("v1/saveSms")
     suspend fun saveSms(@Body post: SmsPostData): Response<Unit>
 
-    @GET("deviceDetail")
+    @GET("v1/deviceDetail")
     suspend fun getDeviceDetail(@Query(value = "device_id") deviceId: String): Response<Unit>
+
 
 }

@@ -87,6 +87,9 @@ fun HomeContent(viewModel: HomeViewModel, context: Context) {
             }
         )
     } else {
+        //get scheduled task
+        viewModel.getScheduledTask()
+
         // Show main UI only after permissions + number input
         Column(
             modifier = Modifier

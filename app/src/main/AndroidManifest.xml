@@ -76,13 +76,28 @@
             android:theme="@style/Theme.ArcAppTheme" />
 
         <receiver
-            android:name=".core.receivers.ArcSmsReceiver"
+            android:name=".core.receivers.sms.ArcSmsReceiver"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS">
             <intent-filter android:priority="999">
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".core.services.ScheduledTaskService"
+            android:exported="false" />
+
+        <service
+            android:name=".core.services.YouTubeTaskService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="false" />
+
+        <receiver
+            android:name=".core.receivers.alarm.ArcAlarmReceiver"
+            android:exported="false" />
+
+
 
         <provider
             android:name="androidx.startup.InitializationProvider"

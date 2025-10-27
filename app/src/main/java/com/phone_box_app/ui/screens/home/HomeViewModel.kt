@@ -14,7 +14,6 @@ import com.phone_box_app.data.room.deviceinfo.DeviceInfoEntity
 import com.phone_box_app.ui.UIState
 import com.phone_box_app.util.getMyDeviceModel
 import com.phone_box_app.util.getMyDeviceName
-import com.phone_box_app.util.getMyDeviceSimNumber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,8 +64,6 @@ class HomeViewModel @Inject constructor(
     private val _deviceDetailResponse =
         MutableStateFlow<UIState<RegisterDeviceResponse>>(UIState.Empty)
     val deviceDetailResponse: StateFlow<UIState<RegisterDeviceResponse>> = _deviceDetailResponse
-
-
 
 
     private val _deviceInfo = MutableStateFlow<DeviceInfoEntity?>(null)
@@ -136,21 +133,23 @@ class HomeViewModel @Inject constructor(
     /**
      * Get list of scheduled tasks
      */
-    fun getScheduledTask(deviceId: String) {
+    fun getScheduledTask() {
         viewModelScope.launch {
             if (!networkHelper.isNetworkConnected()) {
                 _scheduledTaskResponse.emit(UIState.Failure(throwable = NoInternetException()))
                 return@launch
             }
 
-            repository.getScheduledTask(deviceId = deviceId)
-                .onStart { _scheduledTaskResponse.emit(UIState.Loading) }
-                .flowOn(dispatcherProvider.io)
-                .catch { _scheduledTaskResponse.emit(UIState.Failure(it)) }
-                .collect {
-                    _scheduledTaskResponse.emit(UIState.Success(it))
-                    logger.d("TAG", "SUCCESS")
-                }
+            repository.getLocalDeviceInfo()?.deviceIdInt?.let { deviceId ->
+                repository.getScheduledTask(deviceId = deviceId)
+                    .onStart { _scheduledTaskResponse.emit(UIState.Loading) }
+                    .flowOn(dispatcherProvider.io)
+                    .catch { _scheduledTaskResponse.emit(UIState.Failure(it)) }
+                    .collect {
+                        _scheduledTaskResponse.emit(UIState.Success(it))
+                        logger.d("TAG", "SUCCESS")
+                    }
+            }
         }
     }
 }

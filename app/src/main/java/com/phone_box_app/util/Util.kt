@@ -5,8 +5,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
 import android.provider.Settings
+import android.telephony.SmsMessage
 import java.util.UUID
-import androidx.core.content.edit
 
 /**
  * Created by Ram Mandal on 12/10/2025
@@ -50,5 +50,17 @@ fun getMyDeviceName(): String {
 
     return deviceName
 }
+
 fun getMyDeviceModel(): String = Build.MODEL
-fun getMyDeviceSimNumber(): String = "98787788899"
+
+fun Array<SmsMessage?>?.getFullMessage(): String {
+    val stringBuilder = StringBuilder()
+    if (this.isNullOrEmpty()) return ""
+
+    else if (this.isNotEmpty()) {
+        for (sms in this.sortedBy { it?.indexOnIcc }) {
+            stringBuilder.append(sms?.displayMessageBody ?: "")
+        }
+    }
+    return stringBuilder.toString()
+}

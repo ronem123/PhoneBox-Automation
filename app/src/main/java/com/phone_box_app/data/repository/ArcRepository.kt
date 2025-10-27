@@ -18,7 +18,7 @@ class ArcRepository @Inject constructor(
     private val smsLogDao: SmsLogDao
 ) {
 
-    suspend fun getScheduledTask(deviceId: String) =
+    suspend fun getScheduledTask(deviceId: Int) =
         flow { emit(apiService.getTask(deviceId)) }
 
     /**

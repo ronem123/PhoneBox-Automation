@@ -16,7 +16,6 @@ class PBHeaderInterceptor @Inject constructor(@ApiKey private val apiKey: String
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest: Request = chain.request()
         val requestBuilder = originalRequest.newBuilder()
-            .header("X-Api-Key", apiKey)
         val request = requestBuilder.build()
         return chain.proceed(request)
     }

@@ -40,14 +40,17 @@ fun MobileNumberInputDialog(
 ) {
     var phoneNumber by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
-    var selectedCountryCode by remember { mutableStateOf("+1") } // Default country code
 
     // Common country codes (you can expand this list as needed)
     val countryCodes = listOf(
         "+1 (US)", "+44 (UK)", "+91 (India)", "+61 (Australia)",
         "+81 (Japan)", "+49 (Germany)", "+33 (France)", "+39 (Italy)",
-        "+86 (China)", "+977 (Nepal)"
+        "+86 (China)", "+977 (Nepal)", "+237 (Cameroon)"
     )
+
+    var selectedCountryCode by remember { mutableStateOf(countryCodes[0]) } // Default country code
+
+
 
     AlertDialog(
         onDismissRequest = onDismiss,
