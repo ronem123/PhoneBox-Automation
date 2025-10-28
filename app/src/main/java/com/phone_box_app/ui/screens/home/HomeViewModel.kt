@@ -1,5 +1,7 @@
 package com.phone_box_app.ui.screens.home
 
+import android.R
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.phone_box_app.core.dispatcher.DispatcherProvider
@@ -45,6 +47,12 @@ class HomeViewModel @Inject constructor(
         MutableStateFlow<UIState<ScheduledTaskResponse>>(UIState.Empty)
     val scheduledTaskResponse: StateFlow<UIState<ScheduledTaskResponse>> = _scheduledTaskResponse
 
+    /**
+     * Flag which will be listened by the [HomeScreen] if background service is to be fired for
+     * polling the scheduled task for every time-interval lets say 5 minutes interval
+     */
+    private val _startScheduledTaskPoling = MutableStateFlow(false)
+    val startScheduledTaskPoling: StateFlow<Boolean> = _startScheduledTaskPoling
 
     /**
      * Holds the Response from the remote api and store in the private variable [_registerDeviceResponse]
@@ -129,6 +137,16 @@ class HomeViewModel @Inject constructor(
 //        }
 //    }
 
+
+    /**
+     * triggers the event which is being observed by the [HomeScreen]
+     * to trigger the background service for polling Scheduled task
+     */
+    fun triggerScheduledTaskPollingService() {
+        viewModelScope.launch {
+            _startScheduledTaskPoling.emit(true)
+        }
+    }
 
     /**
      * Get list of scheduled tasks

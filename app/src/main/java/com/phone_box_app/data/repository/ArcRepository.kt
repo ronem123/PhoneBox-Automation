@@ -1,5 +1,7 @@
 package com.phone_box_app.data.repository
 
+import android.content.Intent
+import com.phone_box_app.core.services.ScheduledTaskService
 import com.phone_box_app.data.model.DeviceRegistrationPostData
 import com.phone_box_app.data.model.SmsPostData
 import com.phone_box_app.data.network.ApiService
@@ -18,14 +20,15 @@ class ArcRepository @Inject constructor(
     private val smsLogDao: SmsLogDao
 ) {
 
-    suspend fun getScheduledTask(deviceId: Int) =
+
+    fun getScheduledTask(deviceId: Int) =
         flow { emit(apiService.getTask(deviceId)) }
 
     /**
      * Method to register Device to server and save to local room db
      * emit the response as flow
      */
-    suspend fun registerDevice(data: DeviceRegistrationPostData) = flow {
+    fun registerDevice(data: DeviceRegistrationPostData) = flow {
         val response = apiService.registerDevice(data)
         /**
          * Save device info to local room db once saved to server

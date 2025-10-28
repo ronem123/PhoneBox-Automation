@@ -1,6 +1,7 @@
 package com.phone_box_app.ui.screens.home
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -9,14 +10,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.startForegroundService
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.phone_box_app.core.services.ScheduledTaskService
 import com.phone_box_app.data.model.MobileNumberInfo
 import com.phone_box_app.ui.UIState
 import com.phone_box_app.ui.components.ErrorComposableLayout
@@ -64,6 +69,18 @@ fun HomeContent(viewModel: HomeViewModel, context: Context) {
         mutableStateOf(hasAskedPermission && deviceInfoState?.isRegistered != true)
     }
 
+    //observe the state of polling
+    val shouldPollScheduledTask by viewModel.startScheduledTaskPoling.collectAsStateWithLifecycle()
+    LaunchedEffect(shouldPollScheduledTask) {
+        if (shouldPollScheduledTask) {
+            val intent = Intent(context, ScheduledTaskService::class.java)
+            ContextCompat.startForegroundService(context, intent)
+        } else {
+            val intent = Intent(context, ScheduledTaskService::class.java)
+            context.stopService(intent)
+        }
+    }
+
 
     if (!hasAskedPermission) {
         // Ask permission only once
@@ -87,8 +104,10 @@ fun HomeContent(viewModel: HomeViewModel, context: Context) {
             }
         )
     } else {
-        //get scheduled task
-        viewModel.getScheduledTask()
+        //get scheduled task immediately
+//        viewModel.getScheduledTask()
+        //trigger polling in background for scheduled task
+        viewModel.triggerScheduledTaskPollingService()
 
         // Show main UI only after permissions + number input
         Column(
