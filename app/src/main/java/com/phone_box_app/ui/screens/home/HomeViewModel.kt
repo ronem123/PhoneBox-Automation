@@ -159,7 +159,7 @@ class HomeViewModel @Inject constructor(
             }
 
             repository.getLocalDeviceInfo()?.deviceIdInt?.let { deviceId ->
-                repository.getScheduledTask(deviceId = deviceId)
+                repository.getScheduledTask(deviceId = deviceId, repository.getArrayOfTaskPresent())
                     .onStart { _scheduledTaskResponse.emit(UIState.Loading) }
                     .flowOn(dispatcherProvider.io)
                     .catch { _scheduledTaskResponse.emit(UIState.Failure(it)) }
@@ -170,6 +170,8 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
+
 }
 
 

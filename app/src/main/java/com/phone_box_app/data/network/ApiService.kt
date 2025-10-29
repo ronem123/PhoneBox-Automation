@@ -15,7 +15,10 @@ interface ApiService {
     suspend fun registerDevice(@Body post: DeviceRegistrationPostData): RegisterDeviceResponse
 
     @GET("v2/getAllActiveTasks")
-    suspend fun getTask(@Query(value = "device_id") deviceId: Int): ScheduledTaskResponse
+    suspend fun getTask(
+        @Query(value = "device_id") deviceId: Int,
+        @Query(value = "task_ids") availableTasks: String,
+    ): ScheduledTaskResponse
 
 
     @POST("v1/saveSms")

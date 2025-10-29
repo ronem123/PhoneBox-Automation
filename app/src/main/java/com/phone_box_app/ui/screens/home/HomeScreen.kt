@@ -29,6 +29,7 @@ import com.phone_box_app.ui.components.LoadingComposeLayout
 import com.phone_box_app.ui.components.arch_dialogs.MobileNumberInputDialog
 import com.phone_box_app.ui.theme.AppThemeColor
 import com.phone_box_app.util.RequestAppPermissions
+import com.phone_box_app.util.ensureExactAlarmPermission
 import com.phone_box_app.util.getMyDeviceId
 
 
@@ -104,6 +105,7 @@ fun HomeContent(viewModel: HomeViewModel, context: Context) {
             }
         )
     } else {
+        ensureExactAlarmPermission(context)
         //get scheduled task immediately
 //        viewModel.getScheduledTask()
         //trigger polling in background for scheduled task

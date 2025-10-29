@@ -3,10 +3,15 @@ package com.phone_box_app.data.repository
 import android.content.Intent
 import com.phone_box_app.core.services.ScheduledTaskService
 import com.phone_box_app.data.model.DeviceRegistrationPostData
+import com.phone_box_app.data.model.ScheduledTask
+import com.phone_box_app.data.model.ScheduledTaskData
+import com.phone_box_app.data.model.ScheduledTaskResponse
 import com.phone_box_app.data.model.SmsPostData
 import com.phone_box_app.data.network.ApiService
 import com.phone_box_app.data.room.deviceinfo.DeviceInfoDao
 import com.phone_box_app.data.room.deviceinfo.DeviceInfoEntity
+import com.phone_box_app.data.room.scheduledtask.ScheduledTaskDao
+import com.phone_box_app.data.room.scheduledtask.ScheduledTaskEntity
 import com.phone_box_app.data.room.smslog.SmsEntity
 import com.phone_box_app.data.room.smslog.SmsLogDao
 import kotlinx.coroutines.flow.flow
@@ -17,12 +22,9 @@ import javax.inject.Singleton
 class ArcRepository @Inject constructor(
     private val apiService: ApiService,
     private val deviceInfoDao: DeviceInfoDao,
-    private val smsLogDao: SmsLogDao
+    private val smsLogDao: SmsLogDao,
+    private val scheduledTaskDao: ScheduledTaskDao
 ) {
-
-
-    fun getScheduledTask(deviceId: Int) =
-        flow { emit(apiService.getTask(deviceId)) }
 
     /**
      * Method to register Device to server and save to local room db
@@ -54,7 +56,9 @@ class ArcRepository @Inject constructor(
     suspend fun getLocalDeviceInfo(): DeviceInfoEntity? = deviceInfoDao.getDeviceInfo()
 
     /**
+     * DAO and remote methods for SMS
      * Insert sms to sms_log locally and return the row id
+     * ---------------------------------------------------------------------------------------------
      */
     suspend fun insertSms(sender: String, message: String, timeStamp: Long): Long {
         val smsEntity = SmsEntity(
@@ -91,4 +95,60 @@ class ArcRepository @Inject constructor(
         return smsLogDao.getPendingSms()
     }
 
+    /**
+     * DAO and remote methods for Scheduled tasks
+     *  --------------------------------------------------------------------------------------------
+     */
+    fun getScheduledTask(deviceId: Int, availableTasks: String) =
+        flow { emit(apiService.getTask(deviceId, availableTasks)) }
+
+    //insert Scheduled Task
+    suspend fun insertScheduledTask(data: ScheduledTask): ScheduledTaskEntity {
+        val entity = ScheduledTaskEntity(
+            callerId = data.callerId,
+            createdAt = data.createdAt,
+            duration = data.duration,
+            endDate = data.endDate,
+            taskId = data.id,
+            isActive = data.isActive,
+            isPlanData = data.isPlanData,
+            message = data.message,
+            scheduledTime = data.scheduledTime,
+            startDate = data.startDate,
+            taskType = data.taskType,
+            updatedAt = data.updatedAt,
+            url = data.url
+        )
+
+        scheduledTaskDao.insertScheduledTask(entity)
+        return entity
+
+    }
+
+    //get list of ScheduledTask
+    suspend fun getScheduledTasks(): List<ScheduledTaskEntity> =
+        scheduledTaskDao.getPendingScheduledTasks()
+
+    //get array of taskId present in RoomDB
+    suspend fun getArrayOfTaskPresent(): String {
+        //return value inform of 23,23,34
+        val stringBuilder = StringBuilder()
+        scheduledTaskDao.getPendingScheduledTasks().forEach {
+            stringBuilder.append(it.taskId).append(",")
+        }
+        val tasksString = stringBuilder.toString()
+        if (tasksString.isNotEmpty()) {
+            tasksString.substring(0, tasksString.length - 1)
+        }
+        return tasksString
+    }
+
+    //get Scheduled task by taskId
+    suspend fun getScheduledTaskById(taskId: Int): ScheduledTaskEntity? =
+        scheduledTaskDao.getTaskById(taskId)
+
+    //delete task by taskId
+    suspend fun deleteTaskById(taskId: Int) {
+        scheduledTaskDao.deleteById(taskId)
+    }
 }

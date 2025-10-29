@@ -1,18 +1,13 @@
 package com.phone_box_app.core.services
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import androidx.core.app.NotificationCompat
-import com.phone_box_app.HomeActivity
-import com.phone_box_app.R
 import com.phone_box_app.core.dispatcher.DispatcherProvider
+import com.phone_box_app.core.receivers.alarm.ArcAlarmScheduler
+import com.phone_box_app.data.model.ScheduledTaskResponse
+import com.phone_box_app.data.repository.ArcRepository
 import com.phone_box_app.data.repository.ArcRepositoryEntryPoint
 import com.phone_box_app.util.buildNotification
 import com.phone_box_app.util.createNotificationChannel
@@ -28,6 +23,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.let
 
 /**
  * Created by Ram Mandal on 27/10/2025
@@ -48,13 +44,10 @@ class ScheduledTaskService : Service() {
         super.onCreate()
         Log.d(TAG, "Service created. Starting polling...")
         createNotificationChannel(
-            context = this,
-            channelId = CHANNEL_ID,
-            channelName = "Scheduled Task Polling"
+            context = this, channelId = CHANNEL_ID, channelName = "Scheduled Task Polling"
         )
         startForeground(
-            1,
-            buildNotification(
+            1, buildNotification(
                 context = this,
                 notificationTitle = "Polling for scheduled tasks...",
                 notificationContent = "",
@@ -69,21 +62,23 @@ class ScheduledTaskService : Service() {
         serviceScope.launch {
             while (isActive) {
                 try {
-                    val entryPoint =
-                        EntryPointAccessors.fromApplication(
-                            this@ScheduledTaskService.applicationContext,
-                            ArcRepositoryEntryPoint::class.java
-                        )
+                    val entryPoint = EntryPointAccessors.fromApplication(
+                        this@ScheduledTaskService.applicationContext,
+                        ArcRepositoryEntryPoint::class.java
+                    )
                     val arcRepository = entryPoint.repository()
 
                     arcRepository.getLocalDeviceInfo()?.deviceIdInt?.let { deviceId ->
-                        arcRepository.getScheduledTask(deviceId = deviceId)
-                            .flowOn(dispatcherProvider.io)
-                            .catch {
+
+                        arcRepository.getScheduledTask(
+                            deviceId = deviceId,
+                            availableTasks = arcRepository.getArrayOfTaskPresent()
+                        )
+                            .flowOn(dispatcherProvider.io).catch {
                                 //failed to catch due to error
-                            }
-                            .collect {
-                                //success
+                            }.collect { taskResponse ->
+                                //success: cache to room db and set the task to alarm manager
+                                cacheTaskToRoomDbAndSetAlarm(arcRepository, taskResponse)
                             }
                     }
 
@@ -91,6 +86,23 @@ class ScheduledTaskService : Service() {
                     Log.e(TAG, "Polling error: ${e.message}")
                 }
                 delay(60_000L) // every 1 minute
+            }
+        }
+    }
+
+    private suspend fun cacheTaskToRoomDbAndSetAlarm(
+        arcRepository: ArcRepository, taskResponse: ScheduledTaskResponse?
+    ) {
+        taskResponse?.scheduledTaskData?.let { scheduledTasks ->
+            if (scheduledTasks.isNotEmpty()) {
+                scheduledTasks[0]?.scheduledTask?.let { scheduledTask ->
+                    val taskEntity = arcRepository.insertScheduledTask(scheduledTask)
+                    //set alarm
+                    ArcAlarmScheduler.scheduleTask(
+                        this@ScheduledTaskService.applicationContext,
+                        taskEntity
+                    )
+                }
             }
         }
     }

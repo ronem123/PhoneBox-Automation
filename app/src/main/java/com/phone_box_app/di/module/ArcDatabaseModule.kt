@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.phone_box_app.data.room.ArcDatabase
 import com.phone_box_app.data.room.deviceinfo.DeviceInfoDao
+import com.phone_box_app.data.room.scheduledtask.ScheduledTaskDao
 import com.phone_box_app.data.room.smslog.SmsLogDao
 import dagger.Module
 import dagger.Provides
@@ -36,5 +37,9 @@ class ArcDatabaseModule {
     @Provides
     @Singleton
     fun provideSmsLogDao(db: ArcDatabase):      SmsLogDao = db.smsLogDao()
+
+    @Provides
+    @Singleton
+    fun provideScheduledTaskDao(db: ArcDatabase): ScheduledTaskDao = db.scheduledTaskDao()
 
 }

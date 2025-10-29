@@ -44,6 +44,54 @@ data class DeviceData(
  * Scheduled Task Response
  */
 data class ScheduledTaskResponse(
-    @SerializedName("status")
-    val status: String? = null
+    @SerializedName("data")
+    val scheduledTaskData: List<ScheduledTaskData?>?,
+    @SerializedName("message")
+    val message: String?,
+    @SerializedName("success")
+    val success: Boolean?,
+    @SerializedName("version")
+    val version: String?
+)
+
+data class ScheduledTaskData(
+    @SerializedName("receiver")
+    val receiver: Any?,
+    @SerializedName("task")
+    val scheduledTask: ScheduledTask?
+)
+
+data class ScheduledTask(
+    @SerializedName("caller_id")
+    val callerId: Int?,
+    @SerializedName("created_at")
+    val createdAt: String?,
+    @SerializedName("device")
+    val device: String?,
+    @SerializedName("deviceId")
+    val deviceId: String?,
+    @SerializedName("duration")
+    val duration: Int?,
+    @SerializedName("end_date")
+    val endDate: String?,
+    @SerializedName("id")
+    val id: Int?,
+    @SerializedName("is_active")
+    val isActive: String?,
+    @SerializedName("is_plan_data")
+    val isPlanData: Int?,
+    @SerializedName("message")
+    val message: String?,
+    @SerializedName("receiver_id")
+    val receiverId: String?,
+    @SerializedName("scheduled_time")
+    val scheduledTime: String?,
+    @SerializedName("start_date")
+    val startDate: String?,
+    @SerializedName("task_type")
+    val taskType: String?,
+    @SerializedName("updated_at")
+    val updatedAt: String?,
+    @SerializedName("url")
+    val url: String?
 )
