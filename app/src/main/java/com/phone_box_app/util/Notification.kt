@@ -22,7 +22,9 @@ fun buildNotification(
     context: Context,
     notificationTitle: String,
     notificationContent: String,
-    channelId: String
+    channelId: String,
+    smallIcon: Int = R.drawable.ic_launcher_foreground,
+    setOnGoing: Boolean = true
 ): Notification {
     val notificationIntent = Intent(context, HomeActivity::class.java)
     val pendingIntent = PendingIntent.getActivity(
@@ -32,9 +34,9 @@ fun buildNotification(
     return NotificationCompat.Builder(context, channelId)
         .setContentTitle(notificationTitle)
         .setContentText(notificationContent)
-        .setSmallIcon(R.drawable.ic_launcher_foreground)
+        .setSmallIcon(smallIcon)
         .setContentIntent(pendingIntent)
-        .setOngoing(true)
+        .setOngoing(setOnGoing)
         .build()
 }
 

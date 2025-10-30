@@ -46,14 +46,13 @@ class ScheduledTaskService : Service() {
         createNotificationChannel(
             context = this, channelId = CHANNEL_ID, channelName = "Scheduled Task Polling"
         )
-        startForeground(
-            1, buildNotification(
-                context = this,
-                notificationTitle = "Polling for scheduled tasks...",
-                notificationContent = "",
-                channelId = CHANNEL_ID
-            )
+        val notification = buildNotification(
+            context = this,
+            notificationTitle = "Polling for scheduled tasks...",
+            notificationContent = "",
+            channelId = CHANNEL_ID
         )
+        startForeground(1, notification)
 
         startPolling()
     }

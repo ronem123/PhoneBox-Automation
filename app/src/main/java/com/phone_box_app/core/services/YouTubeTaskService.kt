@@ -4,12 +4,18 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.app.usage.NetworkStats
+import android.app.usage.NetworkStatsManager
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
 import android.net.TrafficStats
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.annotation.RequiresApi
+import com.phone_box_app.util.buildNotification
+import com.phone_box_app.util.createNotificationChannel
 import kotlinx.coroutines.*
 
 /**
@@ -22,20 +28,28 @@ class YouTubeTaskService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val TAG = "YouTubeTaskService"
 
+    private val channelId = "youtube_task_channel"
+    private val channelName = "Youtube task runner"
+
+
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
-        val notification = Notification.Builder(this, "task_channel")
-            .setContentTitle("Running Task")
-            .setContentText("Executing scheduled YouTube task...")
-            .setSmallIcon(android.R.drawable.ic_media_play)
-            .build()
+        createNotificationChannel(this, channelId, channelName)
+
+        val notification = buildNotification(
+            context = this,
+            notificationTitle = "Running Task",
+            notificationContent = "Executing scheduled Youtube task...",
+            channelId = channelId,
+            smallIcon = android.R.drawable.ic_media_play,
+            setOnGoing = false
+        )
         startForeground(101, notification)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val url = intent?.getStringExtra("url") ?: return START_NOT_STICKY
-        val duration = intent.getIntExtra("duration", 30)
+        val duration = intent.getIntExtra("duration", 30) // in seconds
 
         scope.launch {
             executeTask(url, duration)
@@ -45,8 +59,14 @@ class YouTubeTaskService : Service() {
     }
 
     private suspend fun executeTask(url: String, duration: Int) {
-        val startRx = TrafficStats.getMobileRxBytes() + TrafficStats.getMobileTxBytes()
+        // 1️⃣ Get UID for this app
+        val uid = packageManager.getApplicationInfo(packageName, 0).uid
 
+        // 2️⃣ Capture initial data usage
+        val startMobile = getUidDataUsage(uid, ConnectivityManager.TYPE_MOBILE)
+        val startWifi = getUidDataUsage(uid, ConnectivityManager.TYPE_WIFI)
+
+        // 3️⃣ Launch YouTube
         Log.d(TAG, "Launching YouTube: $url")
         val youtubeIntent = Intent(Intent.ACTION_VIEW).apply {
             data = android.net.Uri.parse(url)
@@ -54,14 +74,47 @@ class YouTubeTaskService : Service() {
         }
         startActivity(youtubeIntent)
 
+        // 4️⃣ Wait for the scheduled duration
         delay(duration * 1000L)
 
-        val endRx = TrafficStats.getMobileRxBytes() + TrafficStats.getMobileTxBytes()
-        val usedMB = (endRx - startRx) / (1024f * 1024f)
-        Log.d(TAG, "YouTube closed. Used approx: %.2f MB".format(usedMB))
+        // 5️⃣ Capture final data usage
+        val endMobile = getUidDataUsage(uid, ConnectivityManager.TYPE_MOBILE)
+        val endWifi = getUidDataUsage(uid, ConnectivityManager.TYPE_WIFI)
 
+        // 6️⃣ Calculate used data in MB
+        val usedMobileMB = (endMobile - startMobile) / (1024f * 1024f)
+        val usedWifiMB = (endWifi - startWifi) / (1024f * 1024f)
+
+        Log.d(
+            TAG, "Task finished. Mobile: %.2f MB, Wi-Fi: %.2f MB".format(usedMobileMB, usedWifiMB)
+        )
+
+        // 7️⃣ Bring app back to front
         bringAppToFront()
         stopSelf()
+    }
+
+    private fun getUidDataUsage(uid: Int, networkType: Int): Long {
+        return try {
+            val nsm = getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
+            val now = System.currentTimeMillis()
+            val bucket = nsm.queryDetailsForUid(
+                networkType, null, 0L, // start from epoch, we will subtract later
+                now, uid
+            )
+
+            var totalBytes = 0L
+            val usageBucket = NetworkStats.Bucket()
+            while (bucket.hasNextBucket()) {
+                bucket.getNextBucket(usageBucket)
+                totalBytes += usageBucket.rxBytes + usageBucket.txBytes
+            }
+            bucket.close()
+            totalBytes
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading data usage: ${e.message}")
+            0L
+        }
     }
 
     private fun bringAppToFront() {
@@ -70,13 +123,6 @@ class YouTubeTaskService : Service() {
         startActivity(intent)
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel("task_channel", "Task Runner", NotificationManager.IMPORTANCE_LOW)
-            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.createNotificationChannel(channel)
-        }
-    }
 
     override fun onDestroy() {
         super.onDestroy()
