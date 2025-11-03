@@ -27,4 +27,7 @@ interface ScheduledTaskDao {
 
     @Query("DELETE FROM scheduled_task WHERE taskId = :taskId")
     suspend fun deleteById(taskId: Int)
+
+    @Query("DELETE FROM scheduled_task")
+    suspend fun deleteAllTask()
 }

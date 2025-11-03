@@ -7,7 +7,10 @@ import android.util.Log
  * @System: Apple M1 Pro
  */
 class AppLogger : Logger {
-    override fun d(tag: String, msg: String) {
+    override fun v(tag: String, msg: String) {
+        Log.d(tag, msg)
+    }
+    override fun e(tag: String, msg: String) {
         Log.d(tag, msg)
     }
 }

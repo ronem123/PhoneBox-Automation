@@ -165,7 +165,7 @@ class HomeViewModel @Inject constructor(
                     .catch { _scheduledTaskResponse.emit(UIState.Failure(it)) }
                     .collect {
                         _scheduledTaskResponse.emit(UIState.Success(it))
-                        logger.d("TAG", "SUCCESS")
+                        logger.v("TAG", "SUCCESS")
                     }
             }
         }

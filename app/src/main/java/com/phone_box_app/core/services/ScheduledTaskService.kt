@@ -5,6 +5,8 @@ import android.content.Intent
 import android.os.IBinder
 import android.util.Log
 import com.phone_box_app.core.dispatcher.DispatcherProvider
+import com.phone_box_app.core.logger.AppLogger
+import com.phone_box_app.core.logger.Logger
 import com.phone_box_app.core.receivers.alarm.ArcAlarmScheduler
 import com.phone_box_app.data.model.ScheduledTaskResponse
 import com.phone_box_app.data.repository.ArcRepository
@@ -40,9 +42,13 @@ class ScheduledTaskService : Service() {
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
+    @Inject
+    lateinit var appLogger: Logger
+
+
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "Service created. Starting polling...")
+        appLogger.v(TAG, "Service created. Starting polling...")
         createNotificationChannel(
             context = this, channelId = CHANNEL_ID, channelName = "Scheduled Task Polling"
         )
@@ -82,7 +88,7 @@ class ScheduledTaskService : Service() {
                     }
 
                 } catch (e: Exception) {
-                    Log.e(TAG, "Polling error: ${e.message}")
+                    appLogger.v(TAG, "Polling error: ${e.message}")
                 }
                 delay(60_000L) // every 1 minute
             }
@@ -94,16 +100,26 @@ class ScheduledTaskService : Service() {
     ) {
         taskResponse?.scheduledTaskData?.let { scheduledTasks ->
             if (scheduledTasks.isNotEmpty()) {
-                scheduledTasks[0]?.scheduledTask?.let { scheduledTask ->
-                    val taskEntity = arcRepository.insertScheduledTask(scheduledTask)
-                    //set alarm
-                    ArcAlarmScheduler.scheduleTask(
-                        this@ScheduledTaskService.applicationContext,
-                        taskEntity
-                    )
+                scheduledTasks.forEach { task ->
+                    task?.scheduledTask?.let { scheduledTask ->
+                        val taskEntity = arcRepository.insertScheduledTask(scheduledTask)
+                        //set alarm
+                        appLogger.v(
+                            TAG,
+                            "Alarm set for ${taskEntity.taskId} : ${taskEntity.taskType}"
+                        )
+
+                        ArcAlarmScheduler.scheduleTask(
+                            this@ScheduledTaskService.applicationContext,
+                            taskEntity,
+                            appLogger
+                        )
+                    }
                 }
             }
         }
+        //comment later
+//        arcRepository.deleteAllTasks()
     }
 
     override fun onDestroy() {

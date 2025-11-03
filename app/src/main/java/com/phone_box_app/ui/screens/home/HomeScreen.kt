@@ -70,6 +70,9 @@ fun HomeContent(viewModel: HomeViewModel, context: Context) {
         mutableStateOf(hasAskedPermission && deviceInfoState?.isRegistered != true)
     }
 
+    Log.v("HomeScreen","opening home")
+
+
     //observe the state of polling
     val shouldPollScheduledTask by viewModel.startScheduledTaskPoling.collectAsStateWithLifecycle()
     LaunchedEffect(shouldPollScheduledTask) {

@@ -5,5 +5,6 @@ package com.phone_box_app.core.logger
  * @System: Apple M1 Pro
  */
 interface Logger {
-    fun d(tag: String, msg: String)
+    fun v(tag: String, msg: String)
+    fun e(tag: String, msg: String)
 }

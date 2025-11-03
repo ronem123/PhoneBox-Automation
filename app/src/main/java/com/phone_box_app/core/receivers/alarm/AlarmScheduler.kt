@@ -6,6 +6,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.phone_box_app.core.logger.AppLogger
+import com.phone_box_app.core.logger.Logger
 import com.phone_box_app.data.room.scheduledtask.ScheduledTaskEntity
 import com.phone_box_app.util.TimeUtil
 
@@ -17,20 +19,21 @@ import com.phone_box_app.util.TimeUtil
 
 object ArcAlarmScheduler {
     @SuppressLint("ScheduleExactAlarm")
-    fun scheduleTask(context: Context, task: ScheduledTaskEntity) {
+    fun scheduleTask(context: Context, task: ScheduledTaskEntity, appLogger: Logger) {
         val intent = Intent(context, ArcAlarmReceiver::class.java).apply {
+            putExtra(ArcAlarmReceiver.ALARM_TYPE, ArcAlarmReceiver.OPEN_APP)
             putExtra("url", task.url)
             putExtra("duration", task.duration)
             putExtra("id", task.taskId)
         }
 
         if (task.taskId == null) {
-            Log.v("ScheduleTask", "TaskId was null during alarm setup")
+            appLogger.v("ScheduleTask", "TaskId was null during alarm setup")
             return
         }
 
         if (task.startDate == null || task.scheduledTime == null) {
-            Log.v("ScheduleTask", "startDate or scheduled time was null during alarm setup")
+            appLogger.v("ScheduleTask", "startDate or scheduled time was null during alarm setup")
             return
         }
 
@@ -47,11 +50,34 @@ object ArcAlarmScheduler {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val triggerTime = task.duration ?: 0
 
-        Log.d("AlarmScheduler", "Scheduling task ${task.taskId} at $triggerTime")
+        appLogger.v("AlarmScheduler", "Scheduling task ${task.taskId} at $triggerTime")
 
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerTimeMillis,
+            pendingIntent
+        )
+
+    }
+
+    @SuppressLint("ScheduleExactAlarm")
+    fun bringAppToFront(context: Context) {
+        val intent = Intent(context, ArcAlarmReceiver::class.java).apply {
+            putExtra(ArcAlarmReceiver.ALARM_TYPE, ArcAlarmReceiver.TAKE_APP_TO_FRONT)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            1000,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            System.currentTimeMillis(),
             pendingIntent
         )
     }

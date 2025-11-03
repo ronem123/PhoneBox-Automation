@@ -151,4 +151,9 @@ class ArcRepository @Inject constructor(
     suspend fun deleteTaskById(taskId: Int) {
         scheduledTaskDao.deleteById(taskId)
     }
+
+    //delete all tasks
+    suspend fun deleteAllTasks(){
+        scheduledTaskDao.deleteAllTask()
+    }
 }

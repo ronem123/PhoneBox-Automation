@@ -1,22 +1,24 @@
 package com.phone_box_app.core.services
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.Service
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
-import android.net.TrafficStats
-import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import androidx.annotation.RequiresApi
+import androidx.compose.ui.platform.LocalGraphicsContext
+import com.phone_box_app.HomeActivity
+import com.phone_box_app.core.receivers.alarm.ArcAlarmScheduler.bringAppToFront
 import com.phone_box_app.util.buildNotification
 import com.phone_box_app.util.createNotificationChannel
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Created by Ram Mandal on 27/10/2025
@@ -67,7 +69,7 @@ class YouTubeTaskService : Service() {
         val startWifi = getUidDataUsage(uid, ConnectivityManager.TYPE_WIFI)
 
         // 3️⃣ Launch YouTube
-        Log.d(TAG, "Launching YouTube: $url")
+        Log.d(TAG, "Launching YouTube: $url for $duration minute")
         val youtubeIntent = Intent(Intent.ACTION_VIEW).apply {
             data = android.net.Uri.parse(url)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -75,7 +77,13 @@ class YouTubeTaskService : Service() {
         startActivity(youtubeIntent)
 
         // 4️⃣ Wait for the scheduled duration
-        delay(duration * 1000L)
+        //converting minute to milliseconds
+        val durationInMilliSeconds = duration * 60L * 1000L
+
+        //fake estimated time ; taken to lunch the app
+        val timeToOpenYoutube = 2 * 1000L
+
+        delay(durationInMilliSeconds + timeToOpenYoutube)
 
         // 5️⃣ Capture final data usage
         val endMobile = getUidDataUsage(uid, ConnectivityManager.TYPE_MOBILE)
@@ -86,11 +94,12 @@ class YouTubeTaskService : Service() {
         val usedWifiMB = (endWifi - startWifi) / (1024f * 1024f)
 
         Log.d(
-            TAG, "Task finished. Mobile: %.2f MB, Wi-Fi: %.2f MB".format(usedMobileMB, usedWifiMB)
+            TAG,
+            "Task finished. Mobile: %.2f MB, Wi-Fi: %.2f MB".format(usedMobileMB, usedWifiMB)
         )
 
         // 7️⃣ Bring app back to front
-        bringAppToFront()
+        bringAppToFront(context = this)
         stopSelf()
     }
 
@@ -117,13 +126,6 @@ class YouTubeTaskService : Service() {
         }
     }
 
-    private fun bringAppToFront() {
-        val intent = packageManager.getLaunchIntentForPackage(packageName)
-        intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-        startActivity(intent)
-    }
-
-
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
@@ -131,3 +133,5 @@ class YouTubeTaskService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 }
+///Users/rammandal/Documents/Home/AndroidStudioProjects/Freelance/phone-box-android/app/build/outputs/apk/debug/app-debug.apk
+//adb shell dpm set-device-owner com.phone_box_app/.DeviceAdminReceiverImpl
