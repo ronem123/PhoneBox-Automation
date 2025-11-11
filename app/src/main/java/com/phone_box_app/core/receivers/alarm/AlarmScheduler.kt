@@ -5,10 +5,9 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.util.Log
-import com.phone_box_app.core.logger.AppLogger
 import com.phone_box_app.core.logger.Logger
 import com.phone_box_app.core.receivers.alarm.ArcAlarmReceiver.AlarmReceiverType.TASK_TYPE_CALL
+import com.phone_box_app.core.receivers.alarm.ArcAlarmReceiver.AlarmReceiverType.TASK_TYPE_SMS
 import com.phone_box_app.core.receivers.alarm.ArcAlarmReceiver.AlarmReceiverType.TASK_TYPE_YOUTUBE
 import com.phone_box_app.data.room.scheduledtask.ScheduledTaskEntity
 import com.phone_box_app.util.TimeUtil
@@ -28,6 +27,7 @@ object ArcAlarmScheduler {
                 putExtra(ArcAlarmReceiver.ARG_TASK_TYPE, task.taskType)
                 putExtra(ArcAlarmReceiver.ARG_TASK_ID, task.taskId)
                 putExtra(ArcAlarmReceiver.ARG_DURATION, task.duration)
+
                 when (task.taskType) {
                     TASK_TYPE_YOUTUBE -> {
                         putExtra(ArcAlarmReceiver.ARG_URL, task.url)
@@ -35,6 +35,11 @@ object ArcAlarmScheduler {
 
                     TASK_TYPE_CALL -> {
                         putExtra(ArcAlarmReceiver.ARG_RECEIVER_PHONE, task.deviceSimNumber)
+                    }
+
+                    TASK_TYPE_SMS -> {
+                        putExtra(ArcAlarmReceiver.ARG_RECEIVER_PHONE, task.deviceSimNumber)
+                        putExtra(ArcAlarmReceiver.ARG_MESSAGE, task.message)
                     }
 
                 }

@@ -22,12 +22,14 @@ class ArcAlarmReceiver : BroadcastReceiver() {
 
         const val TASK_TYPE_YOUTUBE = "youtube"
         const val TASK_TYPE_CALL = "call"
-        const val TASK_TYPE_BRING_APP_TO_FRONT = "call"
+        const val TASK_TYPE_SMS = "sms"
+        const val TASK_TYPE_BRING_APP_TO_FRONT = "task_bring_app_to_front"
 
         const val ARG_URL = "url"
         const val ARG_DURATION = "duration"
         const val ARG_TASK_ID = "task_id"
         const val ARG_RECEIVER_PHONE = "receiver_phone_number"
+        const val ARG_MESSAGE = "message"
 
     }
 
@@ -62,6 +64,12 @@ class ArcAlarmReceiver : BroadcastReceiver() {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(callIntent)
+            }
+
+            TASK_TYPE_SMS -> {
+                val phoneNumber = intent.getStringExtra(ARG_RECEIVER_PHONE) ?: return
+                val message = intent.getStringExtra(ARG_MESSAGE) ?: return
+
             }
 
             TASK_TYPE_BRING_APP_TO_FRONT -> {
