@@ -14,9 +14,11 @@ import com.phone_box_app.data.model.ScheduledTaskResponse
 import com.phone_box_app.data.repository.ArcRepository
 import com.phone_box_app.data.room.deviceinfo.DeviceInfoEntity
 import com.phone_box_app.ui.UIState
+import com.phone_box_app.util.ArcWifiHelper
 import com.phone_box_app.util.getMyDeviceModel
 import com.phone_box_app.util.getMyDeviceName
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
@@ -128,6 +130,17 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun toggleWifi(){
+        viewModelScope.launch {
+            logger.v("HomeViewModel","wifi enabling")
+            ArcWifiHelper.setWifiEnabled(true) // turn Wi-Fi on
+            logger.v("HomeViewModel","wifi enabled")
+            delay(5000)
+            logger.v("HomeViewModel","wifi disabling")
+            ArcWifiHelper.setWifiEnabled(false) // turn Wi-Fi off
+            logger.v("HomeViewModel","wifi disabled")
+        }
+    }
 //    /**
 //     * Get my DeviceId
 //     */
@@ -145,6 +158,8 @@ class HomeViewModel @Inject constructor(
     fun triggerScheduledTaskPollingService() {
         viewModelScope.launch {
             _startScheduledTaskPoling.emit(true)
+            toggleWifi()
+
         }
     }
 

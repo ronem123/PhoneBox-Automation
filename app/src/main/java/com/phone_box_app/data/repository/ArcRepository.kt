@@ -103,21 +103,29 @@ class ArcRepository @Inject constructor(
         flow { emit(apiService.getTask(deviceId, availableTasks)) }
 
     //insert Scheduled Task
-    suspend fun insertScheduledTask(data: ScheduledTask): ScheduledTaskEntity {
+    suspend fun insertScheduledTask(data: ScheduledTaskData): ScheduledTaskEntity {
         val entity = ScheduledTaskEntity(
-            callerId = data.callerId,
-            createdAt = data.createdAt,
-            duration = data.duration,
-            endDate = data.endDate,
-            taskId = data.id,
-            isActive = data.isActive,
-            isPlanData = data.isPlanData,
-            message = data.message,
-            scheduledTime = data.scheduledTime,
-            startDate = data.startDate,
-            taskType = data.taskType,
-            updatedAt = data.updatedAt,
-            url = data.url
+            callerId = data.scheduledTask?.callerId,
+            createdAt = data.scheduledTask?.createdAt,
+            receiverId = data.scheduledTask?.receiverId,
+            duration = data.scheduledTask?.duration,
+            endDate = data.scheduledTask?.endDate,
+            taskId = data.scheduledTask?.id,
+            isActive = data.scheduledTask?.isActive,
+            isPlanData = data.scheduledTask?.isPlanData,
+            message = data.scheduledTask?.message,
+            scheduledTime = data.scheduledTask?.scheduledTime,
+            startDate = data.scheduledTask?.startDate,
+            taskType = data.scheduledTask?.taskType,
+            updatedAt = data.scheduledTask?.updatedAt,
+            url = data.scheduledTask?.url,
+            //receiver
+            deviceId = data.receiverData?.deviceId,
+            deviceName = data.receiverData?.deviceName,
+            profileName = data.receiverData?.profileName,
+            deviceModel = data.receiverData?.deviceModel,
+            deviceSimNumber = data.receiverData?.deviceSimNumber,
+            country = data.receiverData?.country
         )
 
         scheduledTaskDao.insertScheduledTask(entity)
@@ -153,7 +161,7 @@ class ArcRepository @Inject constructor(
     }
 
     //delete all tasks
-    suspend fun deleteAllTasks(){
+    suspend fun deleteAllTasks() {
         scheduledTaskDao.deleteAllTask()
     }
 }

@@ -8,6 +8,8 @@ import android.content.Intent
 import android.util.Log
 import com.phone_box_app.core.logger.AppLogger
 import com.phone_box_app.core.logger.Logger
+import com.phone_box_app.core.receivers.alarm.ArcAlarmReceiver.AlarmReceiverType.TASK_TYPE_CALL
+import com.phone_box_app.core.receivers.alarm.ArcAlarmReceiver.AlarmReceiverType.TASK_TYPE_YOUTUBE
 import com.phone_box_app.data.room.scheduledtask.ScheduledTaskEntity
 import com.phone_box_app.util.TimeUtil
 
@@ -20,12 +22,23 @@ import com.phone_box_app.util.TimeUtil
 object ArcAlarmScheduler {
     @SuppressLint("ScheduleExactAlarm")
     fun scheduleTask(context: Context, task: ScheduledTaskEntity, appLogger: Logger) {
-        val intent = Intent(context, ArcAlarmReceiver::class.java).apply {
-            putExtra(ArcAlarmReceiver.ALARM_TYPE, ArcAlarmReceiver.OPEN_APP)
-            putExtra("url", task.url)
-            putExtra("duration", task.duration)
-            putExtra("id", task.taskId)
-        }
+
+        val intent = Intent(context, ArcAlarmReceiver::class.java)
+            .apply {
+                putExtra(ArcAlarmReceiver.ARG_TASK_TYPE, task.taskType)
+                putExtra(ArcAlarmReceiver.ARG_TASK_ID, task.taskId)
+                putExtra(ArcAlarmReceiver.ARG_DURATION, task.duration)
+                when (task.taskType) {
+                    TASK_TYPE_YOUTUBE -> {
+                        putExtra(ArcAlarmReceiver.ARG_URL, task.url)
+                    }
+
+                    TASK_TYPE_CALL -> {
+                        putExtra(ArcAlarmReceiver.ARG_RECEIVER_PHONE, task.deviceSimNumber)
+                    }
+
+                }
+            }
 
         if (task.taskId == null) {
             appLogger.v("ScheduleTask", "TaskId was null during alarm setup")
@@ -63,7 +76,7 @@ object ArcAlarmScheduler {
     @SuppressLint("ScheduleExactAlarm")
     fun bringAppToFront(context: Context) {
         val intent = Intent(context, ArcAlarmReceiver::class.java).apply {
-            putExtra(ArcAlarmReceiver.ALARM_TYPE, ArcAlarmReceiver.TAKE_APP_TO_FRONT)
+            putExtra(ArcAlarmReceiver.ARG_TASK_TYPE, ArcAlarmReceiver.TASK_TYPE_BRING_APP_TO_FRONT)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(

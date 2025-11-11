@@ -101,17 +101,18 @@ class ScheduledTaskService : Service() {
         taskResponse?.scheduledTaskData?.let { scheduledTasks ->
             if (scheduledTasks.isNotEmpty()) {
                 scheduledTasks.forEach { task ->
-                    task?.scheduledTask?.let { scheduledTask ->
-                        val taskEntity = arcRepository.insertScheduledTask(scheduledTask)
+                    task?.let { scheduledTask ->
+                        val task = arcRepository.insertScheduledTask(scheduledTask)
+
                         //set alarm
                         appLogger.v(
                             TAG,
-                            "Alarm set for ${taskEntity.taskId} : ${taskEntity.taskType}"
+                            "Alarm set for ${task.taskId} : ${task.taskType}"
                         )
 
                         ArcAlarmScheduler.scheduleTask(
                             this@ScheduledTaskService.applicationContext,
-                            taskEntity,
+                            task = task,
                             appLogger
                         )
                     }
