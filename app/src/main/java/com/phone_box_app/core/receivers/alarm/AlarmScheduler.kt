@@ -6,10 +6,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import com.phone_box_app.core.logger.Logger
-import com.phone_box_app.core.receivers.alarm.ArcAlarmReceiver.AlarmReceiverType.TASK_TYPE_CALL
-import com.phone_box_app.core.receivers.alarm.ArcAlarmReceiver.AlarmReceiverType.TASK_TYPE_SMS
-import com.phone_box_app.core.receivers.alarm.ArcAlarmReceiver.AlarmReceiverType.TASK_TYPE_YOUTUBE
 import com.phone_box_app.data.room.scheduledtask.ScheduledTaskEntity
+import com.phone_box_app.util.ArcTaskType
+import com.phone_box_app.util.ArcTaskType.TASK_TYPE_CALL
+import com.phone_box_app.util.ArcTaskType.TASK_TYPE_SMS
+import com.phone_box_app.util.ArcTaskType.TASK_TYPE_YOUTUBE
+import com.phone_box_app.util.ArgIntent
 import com.phone_box_app.util.TimeUtil
 
 /**
@@ -24,22 +26,23 @@ object ArcAlarmScheduler {
 
         val intent = Intent(context, ArcAlarmReceiver::class.java)
             .apply {
-                putExtra(ArcAlarmReceiver.ARG_TASK_TYPE, task.taskType)
-                putExtra(ArcAlarmReceiver.ARG_TASK_ID, task.taskId)
-                putExtra(ArcAlarmReceiver.ARG_DURATION, task.duration)
+                putExtra(ArgIntent.ARG_TASK_TYPE, task.taskType)
+                putExtra(ArgIntent.ARG_TASK_ID, task.taskId)
 
                 when (task.taskType) {
                     TASK_TYPE_YOUTUBE -> {
-                        putExtra(ArcAlarmReceiver.ARG_URL, task.url)
+                        putExtra(ArgIntent.ARG_URL, task.url)
+                        putExtra(ArgIntent.ARG_DURATION, task.duration)
+
                     }
 
                     TASK_TYPE_CALL -> {
-                        putExtra(ArcAlarmReceiver.ARG_RECEIVER_PHONE, task.deviceSimNumber)
+                        putExtra(ArgIntent.ARG_RECEIVER_PHONE, task.deviceSimNumber)
                     }
 
                     TASK_TYPE_SMS -> {
-                        putExtra(ArcAlarmReceiver.ARG_RECEIVER_PHONE, task.deviceSimNumber)
-                        putExtra(ArcAlarmReceiver.ARG_MESSAGE, task.message)
+                        putExtra(ArgIntent.ARG_RECEIVER_PHONE, task.deviceSimNumber)
+                        putExtra(ArgIntent.ARG_MESSAGE, task.message)
                     }
 
                 }
@@ -68,7 +71,7 @@ object ArcAlarmScheduler {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val triggerTime = task.duration ?: 0
 
-        appLogger.v("AlarmScheduler", "Scheduling task ${task.taskId} at $triggerTime")
+        appLogger.v("AlarmScheduler", "Scheduling task ${task.taskId} for $triggerTime minute")
 
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
@@ -81,7 +84,7 @@ object ArcAlarmScheduler {
     @SuppressLint("ScheduleExactAlarm")
     fun bringAppToFront(context: Context) {
         val intent = Intent(context, ArcAlarmReceiver::class.java).apply {
-            putExtra(ArcAlarmReceiver.ARG_TASK_TYPE, ArcAlarmReceiver.TASK_TYPE_BRING_APP_TO_FRONT)
+            putExtra(ArgIntent.ARG_TASK_TYPE, ArcTaskType.TASK_TYPE_BRING_APP_TO_FRONT)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(

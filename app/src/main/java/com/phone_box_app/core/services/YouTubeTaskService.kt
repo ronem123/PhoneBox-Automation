@@ -8,9 +8,10 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.IBinder
 import android.util.Log
-import androidx.compose.ui.platform.LocalGraphicsContext
-import com.phone_box_app.HomeActivity
+import androidx.core.net.toUri
 import com.phone_box_app.core.receivers.alarm.ArcAlarmScheduler.bringAppToFront
+import com.phone_box_app.util.ArcBroadCastIntentAction
+import com.phone_box_app.util.ArgIntent
 import com.phone_box_app.util.buildNotification
 import com.phone_box_app.util.createNotificationChannel
 import kotlinx.coroutines.CoroutineScope
@@ -50,8 +51,8 @@ class YouTubeTaskService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val url = intent?.getStringExtra("url") ?: return START_NOT_STICKY
-        val duration = intent.getIntExtra("duration", 30) // in seconds
+        val url = intent?.getStringExtra(ArgIntent.ARG_URL) ?: return START_NOT_STICKY
+        val duration = intent.getIntExtra(ArgIntent.ARG_DURATION, 30) // in seconds
 
         scope.launch {
             executeTask(url, duration)
@@ -71,7 +72,7 @@ class YouTubeTaskService : Service() {
         // 3️⃣ Launch YouTube
         Log.d(TAG, "Launching YouTube: $url for $duration minute")
         val youtubeIntent = Intent(Intent.ACTION_VIEW).apply {
-            data = android.net.Uri.parse(url)
+            data = url.toUri()
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(youtubeIntent)
@@ -83,7 +84,12 @@ class YouTubeTaskService : Service() {
         //fake estimated time ; taken to lunch the app
         val timeToOpenYoutube = 2 * 1000L
 
-        delay(durationInMilliSeconds + timeToOpenYoutube)
+        val totalWaitingTime = durationInMilliSeconds + timeToOpenYoutube
+
+        //disable wifi for provided time [converting millisecond to second]
+        disableWifi(totalWaitingTime / 1000)
+
+        delay(totalWaitingTime)
 
         // 5️⃣ Capture final data usage
         val endMobile = getUidDataUsage(uid, ConnectivityManager.TYPE_MOBILE)
@@ -132,6 +138,23 @@ class YouTubeTaskService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun disableWifi(delay: Long) {
+        Log.d(TAG, "Toggling WiFi via broadcast with delay: $delay")
+
+        try {
+            // Create a broadcast intent with action "com.phone_box_app.Wifi"
+            val intent = Intent(ArcBroadCastIntentAction.DISABLE_WIFI)
+            intent.putExtra(ArgIntent.ARG_DURATION, delay) // Pass the delay as an extra
+            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+            sendBroadcast(intent) // Send a broadcast to Tasker or a listener
+            Log.d(TAG, "WiFi toggle broadcast sent successfully with delay: $delay")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending WiFi toggle broadcast", e)
+        }
+    }
 }
 ///Users/rammandal/Documents/Home/AndroidStudioProjects/Freelance/phone-box-android/app/build/outputs/apk/debug/app-debug.apk
 //adb shell dpm set-device-owner com.phone_box_app/.DeviceAdminReceiverImpl
+
+

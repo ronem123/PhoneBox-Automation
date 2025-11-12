@@ -141,14 +141,7 @@ class HomeViewModel @Inject constructor(
             logger.v("HomeViewModel","wifi disabled")
         }
     }
-//    /**
-//     * Get my DeviceId
-//     */
-//    fun getMyDeviceDetail(deviceId: String) {
-//        viewModelScope.launch {
-//            repository.
-//        }
-//    }
+
 
 
     /**
@@ -158,7 +151,7 @@ class HomeViewModel @Inject constructor(
     fun triggerScheduledTaskPollingService() {
         viewModelScope.launch {
             _startScheduledTaskPoling.emit(true)
-            toggleWifi()
+//            toggleWifi()
 
         }
     }
