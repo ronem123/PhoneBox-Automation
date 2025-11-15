@@ -58,4 +58,17 @@ object TimeUtil {
         }
         return triggerTimeMillis
     }
+
+    fun getDateTimeFromTimeStamp(
+        timeStamp: String?, datePattern: String = "yyyy-MM-dd HH:mm:ss"
+    ): String? {
+        var formattedTime: String? = null
+
+        if (!timeStamp.isNullOrEmpty()) {
+            val timeMilliSec = timeStamp.toLong()
+            formattedTime = SimpleDateFormat(datePattern, Locale.getDefault())
+                .format(Date(timeMilliSec))
+        }
+        return formattedTime
+    }
 }

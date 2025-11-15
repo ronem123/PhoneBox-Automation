@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.phone_box_app.data.model.SmsPostData
 import com.phone_box_app.data.repository.ArcRepository
+import com.phone_box_app.util.TimeUtil
 
 /**
  * Created by Ram Mandal on 16/10/2025
@@ -31,7 +32,8 @@ class PendingSmsSyncWorker(
                         deviceId = deviceIdInt,
                         isSent = 1,
                         senderNumber = sms.sender,
-                        message = sms.message
+                        message = sms.message,
+                        timeStamp = TimeUtil.getDateTimeFromTimeStamp(timeStamp = sms.timeStamp.toString())
                     )
                 )
                 Log.v(TAG, "Pending SMS with id: ${sms.id}")

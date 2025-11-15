@@ -10,6 +10,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
 import com.phone_box_app.HomeActivity
 import com.phone_box_app.core.services.CallService
+import com.phone_box_app.core.services.SmsService
 import com.phone_box_app.core.services.YouTubeTaskService
 import com.phone_box_app.util.ArcTaskType
 import com.phone_box_app.util.ArgIntent
@@ -57,10 +58,14 @@ class ArcAlarmReceiver : BroadcastReceiver() {
             }
 
             ArcTaskType.TASK_TYPE_SMS -> {
+                Log.d(TAG, "Alarm received → sending sms now via service")
+
                 val phoneNumber = intent.getStringExtra(ArgIntent.ARG_RECEIVER_PHONE) ?: return
                 val message = intent.getStringExtra(ArgIntent.ARG_MESSAGE) ?: return
 
-                val smsServiceIntent = Intent(context, CallService::class.java).apply {
+                Log.d(TAG, "PhoneNumber:" + phoneNumber + " Message: " + message)
+
+                val smsServiceIntent = Intent(context, SmsService::class.java).apply {
                     putExtra(ArgIntent.ARG_RECEIVER_PHONE, phoneNumber)
                     putExtra(ArgIntent.ARG_MESSAGE, message)
                 }

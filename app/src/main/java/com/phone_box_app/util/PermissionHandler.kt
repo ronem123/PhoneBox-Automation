@@ -19,6 +19,7 @@ fun RequestAppPermissions(
     val permissions = listOf(
         Manifest.permission.READ_SMS,
         Manifest.permission.RECEIVE_SMS,
+        Manifest.permission.SEND_SMS,
         Manifest.permission.READ_CALL_LOG,
         Manifest.permission.READ_PHONE_STATE,
         Manifest.permission.CALL_PHONE

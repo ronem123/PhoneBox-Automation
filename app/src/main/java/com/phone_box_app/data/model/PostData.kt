@@ -31,5 +31,8 @@ data class SmsPostData(
     @SerializedName("sender_number")
     val senderNumber: String?,
     @SerializedName("sms")
-    val message: String?
+    val message: String?,
+    @SerializedName("timestamp")
+    val timeStamp: String?
+
 )

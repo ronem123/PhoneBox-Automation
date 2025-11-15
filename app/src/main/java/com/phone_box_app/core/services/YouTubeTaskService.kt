@@ -145,7 +145,7 @@ class YouTubeTaskService : Service() {
         try {
             // Create a broadcast intent with action "com.phone_box_app.Wifi"
             val intent = Intent(ArcBroadCastIntentAction.DISABLE_WIFI)
-            intent.putExtra(ArgIntent.ARG_DURATION, delay) // Pass the delay as an extra
+            intent.putExtra(ArgIntent.ARG_DELAY, delay) // Pass the delay as an extra
             intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
             sendBroadcast(intent) // Send a broadcast to Tasker or a listener
             Log.d(TAG, "WiFi toggle broadcast sent successfully with delay: $delay")
