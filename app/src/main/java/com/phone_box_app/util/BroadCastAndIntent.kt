@@ -1,5 +1,9 @@
 package com.phone_box_app.util
 
+import android.content.Context
+import android.content.Intent
+import android.util.Log
+
 
 /**
  * Created by Ram Mandal on 12/11/2025
@@ -8,9 +12,20 @@ package com.phone_box_app.util
 
 object ArcTaskType {
     const val TASK_TYPE_YOUTUBE = "youtube"
+    const val TASK_TYPE_FACEBOOK = "facebook"
+    const val TASK_TYPE_CHROME = "chrome"
     const val TASK_TYPE_CALL = "call"
     const val TASK_TYPE_SMS = "sms"
-    const val TASK_TYPE_BRING_APP_TO_FRONT = "task_bring_app_to_front"
+
+}
+
+enum class TaskerTaskType {
+    KILL_FACEBOOK,
+    KILL_YOUTUBE,
+    KILL_CHROME,
+    DISABLE_WIFI,
+    END_CALL,
+    NONE
 }
 
 object ArgIntent {
@@ -27,4 +42,37 @@ object ArgIntent {
 object ArcBroadCastIntentAction {
     const val DISABLE_WIFI = "com.phone_box_app.Wifi"
     const val END_CALL = "com.phone_box_app.EndCall"
+    const val KILL_YOUTUBE = "com.phone_box_app.KillYoutube"
+    const val KILL_FACEBOOK = "com.phone_box_app.KillFacebook"
+    const val KILL_CHROME = "com.phone_box_app.KillChrome"
+}
+
+
+private fun getAction(taskerTaskType: TaskerTaskType): String {
+    return when (taskerTaskType) {
+        TaskerTaskType.KILL_YOUTUBE -> ArcBroadCastIntentAction.KILL_YOUTUBE
+        TaskerTaskType.KILL_FACEBOOK -> ArcBroadCastIntentAction.KILL_FACEBOOK
+        TaskerTaskType.KILL_CHROME -> ArcBroadCastIntentAction.KILL_CHROME
+        TaskerTaskType.END_CALL -> ArcBroadCastIntentAction.END_CALL
+        TaskerTaskType.DISABLE_WIFI -> ArcBroadCastIntentAction.DISABLE_WIFI
+        TaskerTaskType.NONE -> ""
+    }
+}
+
+fun Context.sendBroadcastToTasker(taskerTaskType: TaskerTaskType, delay: Long = 0) {
+    val TAG = "TASKER"
+
+    Log.d(TAG, "Sending broadcast to tasker for $taskerTaskType with delay: $delay sec")
+
+    try {
+        val intent = Intent(getAction(taskerTaskType))
+        intent.putExtra(ArgIntent.ARG_DELAY, delay) // Pass the delay as an extra
+        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        this.sendBroadcast(intent) // Send a broadcast to Tasker or a listener
+        Log.d(TAG, "$taskerTaskType broadcast sent successfully with delay: $delay")
+    } catch (e: Exception) {
+        Log.e(TAG, "Error sending $taskerTaskType broadcast", e)
+    }
+
+
 }

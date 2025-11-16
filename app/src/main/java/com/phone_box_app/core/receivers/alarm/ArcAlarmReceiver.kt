@@ -4,14 +4,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.telephony.SmsManager
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.core.net.toUri
-import com.phone_box_app.HomeActivity
 import com.phone_box_app.core.services.CallService
 import com.phone_box_app.core.services.SmsService
-import com.phone_box_app.core.services.YouTubeTaskService
+import com.phone_box_app.core.services.DataUsageTaskService
 import com.phone_box_app.util.ArcTaskType
 import com.phone_box_app.util.ArgIntent
 
@@ -26,17 +23,20 @@ class ArcAlarmReceiver : BroadcastReceiver() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onReceive(context: Context, intent: Intent) {
         val type = intent.getStringExtra(ArgIntent.ARG_TASK_TYPE)
+        val taskId = intent.getIntExtra(ArgIntent.ARG_TASK_ID, -1)
         Log.d(TAG, "Received for $type")
 
         when (type) {
-            ArcTaskType.TASK_TYPE_YOUTUBE -> {
+            ArcTaskType.TASK_TYPE_YOUTUBE, ArcTaskType.TASK_TYPE_CHROME, ArcTaskType.TASK_TYPE_FACEBOOK -> {
                 val url = intent.getStringExtra(ArgIntent.ARG_URL)
                 val duration = intent.getIntExtra(ArgIntent.ARG_DURATION, 30)
 
-                Log.d(TAG, "Alarm received → starting YouTubeTaskService for $url")
+                Log.d(TAG, "Alarm received for ${type}→ starting DataUsage Task Service for $url")
 
-                val serviceIntent = Intent(context, YouTubeTaskService::class.java).apply {
+                val serviceIntent = Intent(context, DataUsageTaskService::class.java).apply {
                     putExtra(ArgIntent.ARG_URL, url)
+                    putExtra(ArgIntent.ARG_TASK_TYPE, type)
+                    putExtra(ArgIntent.ARG_TASK_ID, taskId)
                     putExtra(ArgIntent.ARG_DURATION, duration)
                 }
                 context.startForegroundService(serviceIntent)
@@ -50,6 +50,8 @@ class ArcAlarmReceiver : BroadcastReceiver() {
 
                 val callServiceIntent = Intent(context, CallService::class.java).apply {
                     putExtra(ArgIntent.ARG_RECEIVER_PHONE, phoneNumber)
+                    putExtra(ArgIntent.ARG_TASK_TYPE, type)
+                    putExtra(ArgIntent.ARG_TASK_ID, taskId)
                     putExtra(ArgIntent.ARG_DURATION, duration)
                 }
                 context.startForegroundService(callServiceIntent)
@@ -63,10 +65,12 @@ class ArcAlarmReceiver : BroadcastReceiver() {
                 val phoneNumber = intent.getStringExtra(ArgIntent.ARG_RECEIVER_PHONE) ?: return
                 val message = intent.getStringExtra(ArgIntent.ARG_MESSAGE) ?: return
 
-                Log.d(TAG, "PhoneNumber:" + phoneNumber + " Message: " + message)
+                Log.d(TAG, "PhoneNumber:$phoneNumber Message: $message")
 
                 val smsServiceIntent = Intent(context, SmsService::class.java).apply {
                     putExtra(ArgIntent.ARG_RECEIVER_PHONE, phoneNumber)
+                    putExtra(ArgIntent.ARG_TASK_TYPE, type)
+                    putExtra(ArgIntent.ARG_TASK_ID, taskId)
                     putExtra(ArgIntent.ARG_MESSAGE, message)
                 }
                 context.startForegroundService(smsServiceIntent)
@@ -74,14 +78,6 @@ class ArcAlarmReceiver : BroadcastReceiver() {
 
             }
 
-            ArcTaskType.TASK_TYPE_BRING_APP_TO_FRONT -> {
-                Log.d("TaskAlarmReceiver", "Alarm received → Opening App to front")
-
-                val youtubeIntent = Intent(context, HomeActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(youtubeIntent)
-            }
         }
     }
 }

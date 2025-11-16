@@ -18,7 +18,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.startForegroundService
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.phone_box_app.core.services.ScheduledTaskService
@@ -109,8 +108,10 @@ fun HomeContent(viewModel: HomeViewModel, context: Context) {
         )
     } else {
         ensureExactAlarmPermission(context)
-        //get scheduled task immediately
-//        viewModel.getScheduledTask()
+        //delete all tasks
+        //temp delete
+//        viewModel.clearAllTasks()
+
         //trigger polling in background for scheduled task
         viewModel.triggerScheduledTaskPollingService()
 

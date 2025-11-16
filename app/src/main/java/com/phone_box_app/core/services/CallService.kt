@@ -5,17 +5,24 @@ import android.content.Intent
 import android.os.IBinder
 import android.util.Log
 import androidx.core.net.toUri
+import com.phone_box_app.core.logger.Logger
+import com.phone_box_app.data.repository.ArcRepositoryEntryPoint
 import com.phone_box_app.util.ArcBroadCastIntentAction
 import com.phone_box_app.util.ArgIntent
+import com.phone_box_app.util.TaskerTaskType
 import com.phone_box_app.util.buildNotification
 import com.phone_box_app.util.createNotificationChannel
+import com.phone_box_app.util.sendBroadcastToTasker
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 
 /**
@@ -26,12 +33,15 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class CallService : Service() {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private val TAG = "CallService"
 
     private val channelId = "call_task_channel"
     private val channelName = "call task runner"
 
+    @Inject
+    lateinit var appLogger: Logger
 
     override fun onCreate() {
         super.onCreate()
@@ -48,13 +58,40 @@ class CallService : Service() {
         startForeground(102, notification)
     }
 
+    private fun deleteTaskById(id: Int?) {
+        id?.let {
+            serviceScope.launch {
+                while (isActive) {
+                    try {
+                        val entryPoint = EntryPointAccessors.fromApplication(
+                            this@CallService.applicationContext,
+                            ArcRepositoryEntryPoint::class.java
+                        )
+                        val arcRepository = entryPoint.repository()
+
+                        arcRepository.deleteTaskById(taskId = id)
+
+
+                    } catch (e: Exception) {
+                        appLogger.v(TAG, "Error deleting task $id: ${e.message}")
+                    }
+                    delay(60_000L) // every 1 minute
+                }
+            }
+        }
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val phoneNumber =
             intent?.getStringExtra(ArgIntent.ARG_RECEIVER_PHONE) ?: return START_NOT_STICKY
         val duration = intent.getIntExtra(ArgIntent.ARG_DURATION, 30) // in seconds
+        val taskId = intent.getIntExtra(ArgIntent.ARG_TASK_ID, -1)
 
-        scope.launch {
+
+        serviceScope.launch {
             executeTask(phoneNumber, duration)
+            deleteTaskById(id = taskId)
+
         }
 
         return START_NOT_STICKY
@@ -81,7 +118,8 @@ class CallService : Service() {
 
 
         //send broadcast to tasker after durationInMilliseconds/1000 sec to end the call
-        endCallAfter(durationInMilliSeconds / 1000)
+        this.sendBroadcastToTasker(TaskerTaskType.END_CALL, durationInMilliSeconds / 1000)
+
 
         stopSelf()
     }
@@ -89,22 +127,9 @@ class CallService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        scope.cancel()
+        serviceScope.cancel()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun endCallAfter(delay: Long) {
-        Log.d(TAG, "End Call via broadcast with delay: $delay")
-
-        try {
-            val intent = Intent(ArcBroadCastIntentAction.END_CALL)
-            intent.putExtra(ArgIntent.ARG_DELAY, delay) // Pass the delay as an extra
-            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-            sendBroadcast(intent) // Send a broadcast to Tasker or a listener
-            Log.d(TAG, "END Call broadcast sent successfully with delay: $delay")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error sending End Call broadcast", e)
-        }
-    }
 }

@@ -130,18 +130,17 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun toggleWifi(){
+    fun toggleWifi() {
         viewModelScope.launch {
-            logger.v("HomeViewModel","wifi enabling")
+            logger.v("HomeViewModel", "wifi enabling")
             ArcWifiHelper.setWifiEnabled(true) // turn Wi-Fi on
-            logger.v("HomeViewModel","wifi enabled")
+            logger.v("HomeViewModel", "wifi enabled")
             delay(5000)
-            logger.v("HomeViewModel","wifi disabling")
+            logger.v("HomeViewModel", "wifi disabling")
             ArcWifiHelper.setWifiEnabled(false) // turn Wi-Fi off
-            logger.v("HomeViewModel","wifi disabled")
+            logger.v("HomeViewModel", "wifi disabled")
         }
     }
-
 
 
     /**
@@ -151,8 +150,15 @@ class HomeViewModel @Inject constructor(
     fun triggerScheduledTaskPollingService() {
         viewModelScope.launch {
             _startScheduledTaskPoling.emit(true)
-//            toggleWifi()
+        }
+    }
 
+    /**
+     * Delete All Tasks
+     */
+    fun clearAllTasks() {
+        viewModelScope.launch {
+            repository.deleteAllTasks()
         }
     }
 

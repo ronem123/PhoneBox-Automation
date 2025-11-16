@@ -9,6 +9,8 @@ import com.phone_box_app.core.logger.Logger
 import com.phone_box_app.data.room.scheduledtask.ScheduledTaskEntity
 import com.phone_box_app.util.ArcTaskType
 import com.phone_box_app.util.ArcTaskType.TASK_TYPE_CALL
+import com.phone_box_app.util.ArcTaskType.TASK_TYPE_CHROME
+import com.phone_box_app.util.ArcTaskType.TASK_TYPE_FACEBOOK
 import com.phone_box_app.util.ArcTaskType.TASK_TYPE_SMS
 import com.phone_box_app.util.ArcTaskType.TASK_TYPE_YOUTUBE
 import com.phone_box_app.util.ArgIntent
@@ -30,7 +32,9 @@ object ArcAlarmScheduler {
                 putExtra(ArgIntent.ARG_TASK_ID, task.taskId)
 
                 when (task.taskType) {
-                    TASK_TYPE_YOUTUBE -> {
+                    TASK_TYPE_YOUTUBE,
+                    TASK_TYPE_FACEBOOK,
+                    TASK_TYPE_CHROME -> {
                         putExtra(ArgIntent.ARG_URL, task.url)
                         putExtra(ArgIntent.ARG_DURATION, task.duration)
 
@@ -81,25 +85,4 @@ object ArcAlarmScheduler {
 
     }
 
-    @SuppressLint("ScheduleExactAlarm")
-    fun bringAppToFront(context: Context) {
-        val intent = Intent(context, ArcAlarmReceiver::class.java).apply {
-            putExtra(ArgIntent.ARG_TASK_TYPE, ArcTaskType.TASK_TYPE_BRING_APP_TO_FRONT)
-        }
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            1000,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            System.currentTimeMillis(),
-            pendingIntent
-        )
-    }
 }
