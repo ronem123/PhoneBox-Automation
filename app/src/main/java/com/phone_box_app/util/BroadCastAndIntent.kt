@@ -23,6 +23,7 @@ enum class TaskerTaskType {
     KILL_FACEBOOK,
     KILL_YOUTUBE,
     KILL_CHROME,
+    ENABLE_WIFI,
     DISABLE_WIFI,
     END_CALL,
     NONE
@@ -40,7 +41,9 @@ object ArgIntent {
 }
 
 object ArcBroadCastIntentAction {
-    const val DISABLE_WIFI = "com.phone_box_app.Wifi"
+    const val DISABLE_WIFI = "com.phone_box_app.DisableWifi"
+
+    const val ENABLE_WIFI = "com.phone_box_app.EnableWifi"
     const val END_CALL = "com.phone_box_app.EndCall"
     const val KILL_YOUTUBE = "com.phone_box_app.KillYoutube"
     const val KILL_FACEBOOK = "com.phone_box_app.KillFacebook"
@@ -55,6 +58,7 @@ private fun getAction(taskerTaskType: TaskerTaskType): String {
         TaskerTaskType.KILL_CHROME -> ArcBroadCastIntentAction.KILL_CHROME
         TaskerTaskType.END_CALL -> ArcBroadCastIntentAction.END_CALL
         TaskerTaskType.DISABLE_WIFI -> ArcBroadCastIntentAction.DISABLE_WIFI
+        TaskerTaskType.ENABLE_WIFI -> ArcBroadCastIntentAction.ENABLE_WIFI
         TaskerTaskType.NONE -> ""
     }
 }

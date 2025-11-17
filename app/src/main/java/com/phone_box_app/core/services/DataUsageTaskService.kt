@@ -3,13 +3,16 @@ package com.phone_box_app.core.services
 import android.app.Service
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
+import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
+import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.net.toUri
-import com.phone_box_app.core.dispatcher.DispatcherProvider
 import com.phone_box_app.core.logger.Logger
 import com.phone_box_app.data.repository.ArcRepositoryEntryPoint
 import com.phone_box_app.util.ArcTaskType
@@ -25,8 +28,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -90,67 +91,81 @@ class DataUsageTaskService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.v(TAG, "Starting Data usage service from onStartCommand")
-        val taskType = intent?.getStringExtra(ArgIntent.ARG_TASK_TYPE)
-        val taskId = intent?.getIntExtra(ArgIntent.ARG_TASK_ID, -1)
-        val url = intent?.getStringExtra(ArgIntent.ARG_URL) ?: return START_NOT_STICKY
-        val duration = intent.getIntExtra(ArgIntent.ARG_DURATION, 30) // in seconds
-
-        Log.v(TAG, "TaskType : $taskType")
-
         serviceScope.launch {
-            taskType?.let {
-                executeTask(taskType, url, duration)
-                deleteTaskById(id = taskId)
+            try {
+                handleIntent(intent)
+            } catch (e: Exception) {
+                appLogger.e(TAG, "Error occurred handling intent ${e.message}")
+                e.printStackTrace()
+            } finally {
+                // stop service when done (or you may want to keep running if continuous)
             }
         }
 
         return START_NOT_STICKY
     }
 
-    private suspend fun executeTask(taskType: String, url: String, duration: Int) {
-        // 1️⃣ Get UID for this app
-        val uid = packageManager.getApplicationInfo(packageName, 0).uid
-
-        // 2️⃣ Capture initial data usage
-        val startMobile = getUidDataUsage(uid, ConnectivityManager.TYPE_MOBILE)
-        val startWifi = getUidDataUsage(uid, ConnectivityManager.TYPE_WIFI)
-
-        // 3️⃣ Launch YouTube
-        Log.d(TAG, "Launching Browser: $url for $duration minute")
-        val dataUsageIntent = Intent(Intent.ACTION_VIEW).apply {
-            data = url.toUri()
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    private suspend fun handleIntent(intent: Intent?) {
+        if (intent == null) {
+            stopSelf()
+            return
         }
-        startActivity(dataUsageIntent)
 
-        // 4️⃣ Wait for the scheduled duration
-        //converting minute to milliseconds
-        val durationInMilliSeconds = duration * 60L * 1000L
+        val taskType = intent.getStringExtra(ArgIntent.ARG_TASK_TYPE) ?: run {
+            stopSelf(); return
+        }
+        val url = intent.getStringExtra(ArgIntent.ARG_URL)
+        val duration = intent.getIntExtra(ArgIntent.ARG_DURATION, 30)
+        val taskId = intent.getIntExtra(ArgIntent.ARG_TASK_ID, -1)
 
-        //fake estimated time ; taken to lunch the app
-        val timeToOpenBrowserOrApp = 2 * 1000L
-
-        val totalWaitingTime = durationInMilliSeconds + timeToOpenBrowserOrApp
-
-        //disable wifi for provided time [converting millisecond to second]
-        this.sendBroadcastToTasker(TaskerTaskType.DISABLE_WIFI, totalWaitingTime / 1000)
-
-        delay(totalWaitingTime)
-
-        // 5️⃣ Capture final data usage
-        val endMobile = getUidDataUsage(uid, ConnectivityManager.TYPE_MOBILE)
-        val endWifi = getUidDataUsage(uid, ConnectivityManager.TYPE_WIFI)
-
-        // 6️⃣ Calculate used data in MB
-        val usedMobileMB = (endMobile - startMobile) / (1024f * 1024f)
-        val usedWifiMB = (endWifi - startWifi) / (1024f * 1024f)
-
-        Log.d(
+        appLogger.v(
             TAG,
-            "Task finished. Mobile: %.2f MB, Wi-Fi: %.2f MB".format(usedMobileMB, usedWifiMB)
+            "Starting data usage task: $taskType url=$url duration=$duration taskId=$taskId"
         )
 
-        //kill the respective app or browser
+        // Ensure user granted Usage Access (PACKAGE_USAGE_STATS) for NetworkStatsManager to work
+        if (!isUsageAccessGranted()) {
+            appLogger.v(TAG, "Usage access (PACKAGE_USAGE_STATS) not granted. Launching settings.")
+            launchUsageAccessSettings()
+            stopSelf()
+            return
+        }
+
+
+        // 1) Read TOTAL MOBILE data before task
+        val startMobile = getTotalMobileDataUsage()
+
+        // 2) Disable WiFi using Tasker
+        sendBroadcastToTasker(TaskerTaskType.DISABLE_WIFI, 0)
+
+        // 3) Launch the required app/browser
+        launchAppOrUrl(url)
+
+        // 4) Wait
+        val durationInMilliSeconds = duration * 60L * 1000L
+        delay(durationInMilliSeconds)
+
+        // 5) Read TOTAL MOBILE data after
+        val endMobile = getTotalMobileDataUsage()
+
+        // 6) Calculate used MB
+        val usedMB = (endMobile - startMobile) / (1024f * 1024f)
+
+        Log.d(TAG, "Task finished → Used: %.2f MB".format(usedMB))
+
+        // 7) Kill apps via Tasker
+        killAppOrBrowser(taskType)
+
+        // 8) enable wifi
+        sendBroadcastToTasker(TaskerTaskType.ENABLE_WIFI, 0)
+
+        // 9) Delete task from Room DB
+        deleteTaskById(taskId)
+
+        stopSelf()
+    }
+
+    private fun killAppOrBrowser(taskType: String) {
         val taskerTaskType =
             when (taskType) {
                 ArcTaskType.TASK_TYPE_YOUTUBE -> TaskerTaskType.KILL_YOUTUBE
@@ -161,32 +176,83 @@ class DataUsageTaskService : Service() {
                 }
             }
         this.sendBroadcastToTasker(taskerTaskType = taskerTaskType)
-
-        stopSelf()
     }
 
-    private fun getUidDataUsage(uid: Int, networkType: Int): Long {
+    private fun getTotalMobileDataUsage(): Long {
         return try {
             val nsm = getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
             val now = System.currentTimeMillis()
-            val bucket = nsm.queryDetailsForUid(
-                networkType, null, 0L, // start from epoch, we will subtract later
-                now, uid
+
+            val bucket = nsm.querySummary(
+                ConnectivityManager.TYPE_MOBILE,
+                getSubscriberId(),
+                0L,
+                now
             )
 
-            var totalBytes = 0L
-            val usageBucket = NetworkStats.Bucket()
+            var total = 0L
+            val summaryBucket = NetworkStats.Bucket()
             while (bucket.hasNextBucket()) {
-                bucket.getNextBucket(usageBucket)
-                totalBytes += usageBucket.rxBytes + usageBucket.txBytes
+                bucket.getNextBucket(summaryBucket)
+                total += summaryBucket.rxBytes + summaryBucket.txBytes
             }
             bucket.close()
-            totalBytes
+            total
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading data usage: ${e.message}")
+            Log.e("DataUsage", "Error reading total mobile data: ${e.message}")
             0L
         }
     }
+
+    private fun getSubscriberId(): String? {
+        val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) null else tm.subscriberId
+    }
+
+
+    private fun launchAppOrUrl(url: String?) {
+        try {
+            if (!url.isNullOrBlank()) {
+                Log.d(TAG, "Launching Browser: $url")
+
+
+                val dataUsageIntent = Intent(Intent.ACTION_VIEW).apply {
+                    data = url.toUri()
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                try {
+                    startActivity(dataUsageIntent)
+                    return
+                } catch (e: Exception) {
+                    // fallback to open url in browser if app not handle it
+                    e.printStackTrace()
+                }
+            }
+
+        } catch (e: Exception) {
+            appLogger.v(TAG, "Failed to launch app/$url: ${e.message}")
+        }
+    }
+
+
+    private fun isUsageAccessGranted(): Boolean {
+        return try {
+            val now = System.currentTimeMillis()
+            val usm = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+            val list = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, now - 1000L * 60L, now)
+            list != null && list.isNotEmpty()
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun launchUsageAccessSettings() {
+        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
+    }
+
 
     override fun onDestroy() {
         super.onDestroy()

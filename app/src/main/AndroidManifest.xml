@@ -35,9 +35,6 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
-    <permission
-        android:name="android.permission.PACKAGE_USAGE_STATS"
-        android:protectionLevel="signature" />
 
     <uses-feature
         android:name="android.hardware.telephony"
