@@ -3,6 +3,7 @@ package com.phone_box_app.data.repository
 import android.content.Intent
 import com.phone_box_app.core.services.ScheduledTaskService
 import com.phone_box_app.data.model.DeviceRegistrationPostData
+import com.phone_box_app.data.model.SaveDataUsagePostData
 import com.phone_box_app.data.model.ScheduledTask
 import com.phone_box_app.data.model.ScheduledTaskData
 import com.phone_box_app.data.model.ScheduledTaskResponse
@@ -90,6 +91,12 @@ class ArcRepository @Inject constructor(
         val response = apiService.saveSms(smsPostData)
         return response.isSuccessful
     }
+
+    suspend fun saveDataUsageToServer(postData: SaveDataUsagePostData): Boolean {
+        val response = apiService.saveDataUsage(postData)
+        return response.isSuccessful
+    }
+
 
     suspend fun getPendingSmsLog(): List<SmsEntity> {
         return smsLogDao.getPendingSms()

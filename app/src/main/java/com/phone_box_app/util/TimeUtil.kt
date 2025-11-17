@@ -59,6 +59,11 @@ object TimeUtil {
         return triggerTimeMillis
     }
 
+    fun getCurrentDate(datePattern: String = "yyyy-MM-dd HH:mm:ss"): String {
+        return SimpleDateFormat(datePattern, Locale.getDefault())
+            .format(Date(System.currentTimeMillis()))
+    }
+
     fun getDateTimeFromTimeStamp(
         timeStamp: String?, datePattern: String = "yyyy-MM-dd HH:mm:ss"
     ): String? {

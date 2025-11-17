@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.core.content.PermissionChecker
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.phone_box_app.core.services.ScheduledTaskService
@@ -30,6 +31,8 @@ import com.phone_box_app.ui.theme.AppThemeColor
 import com.phone_box_app.util.RequestAppPermissions
 import com.phone_box_app.util.ensureExactAlarmPermission
 import com.phone_box_app.util.getMyDeviceId
+import com.phone_box_app.util.isUsageAccessGranted
+import com.phone_box_app.util.launchUsageAccessSettings
 
 
 /**
@@ -69,7 +72,7 @@ fun HomeContent(viewModel: HomeViewModel, context: Context) {
         mutableStateOf(hasAskedPermission && deviceInfoState?.isRegistered != true)
     }
 
-    Log.v("HomeScreen","opening home")
+    Log.v("HomeScreen", "opening home")
 
 
     //observe the state of polling
@@ -108,6 +111,11 @@ fun HomeContent(viewModel: HomeViewModel, context: Context) {
         )
     } else {
         ensureExactAlarmPermission(context)
+
+        if (!isUsageAccessGranted(context)) {
+            launchUsageAccessSettings(context)
+        }
+
         //delete all tasks
         //temp delete
 //        viewModel.clearAllTasks()

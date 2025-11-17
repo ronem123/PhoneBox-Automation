@@ -2,6 +2,7 @@ package com.phone_box_app.data.network
 
 import com.phone_box_app.data.model.DeviceRegistrationPostData
 import com.phone_box_app.data.model.RegisterDeviceResponse
+import com.phone_box_app.data.model.SaveDataUsagePostData
 import com.phone_box_app.data.model.ScheduledTaskResponse
 import com.phone_box_app.data.model.SmsPostData
 import retrofit2.Response
@@ -27,5 +28,6 @@ interface ApiService {
     @GET("v1/deviceDetail")
     suspend fun getDeviceDetail(@Query(value = "device_id") deviceId: String): Response<Unit>
 
-
+    @POST("v1/saveDataUsage")
+    suspend fun saveDataUsage(@Body post: SaveDataUsagePostData): Response<Unit>
 }

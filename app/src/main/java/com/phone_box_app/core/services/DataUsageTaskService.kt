@@ -3,21 +3,23 @@ package com.phone_box_app.core.services
 import android.app.Service
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
-import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.IBinder
-import android.provider.Settings
 import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.net.toUri
+import com.phone_box_app.core.dispatcher.DispatcherProvider
 import com.phone_box_app.core.logger.Logger
+import com.phone_box_app.data.model.SaveDataUsagePostData
+import com.phone_box_app.data.repository.ArcRepository
 import com.phone_box_app.data.repository.ArcRepositoryEntryPoint
 import com.phone_box_app.util.ArcTaskType
 import com.phone_box_app.util.ArgIntent
 import com.phone_box_app.util.TaskerTaskType
+import com.phone_box_app.util.TimeUtil
 import com.phone_box_app.util.buildNotification
 import com.phone_box_app.util.createNotificationChannel
 import com.phone_box_app.util.sendBroadcastToTasker
@@ -26,10 +28,12 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import okhttp3.internal.wait
 import javax.inject.Inject
 
 /**
@@ -50,6 +54,8 @@ class DataUsageTaskService : Service() {
     @Inject
     lateinit var appLogger: Logger
 
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun onCreate() {
         super.onCreate()
@@ -66,24 +72,14 @@ class DataUsageTaskService : Service() {
         startForeground(101, notification)
     }
 
-    private fun deleteTaskById(id: Int?) {
+    private fun deleteTaskById(arcRepository: ArcRepository, id: Int?) {
         id?.let {
             serviceScope.launch {
-                while (isActive) {
-                    try {
-                        val entryPoint = EntryPointAccessors.fromApplication(
-                            this@DataUsageTaskService.applicationContext,
-                            ArcRepositoryEntryPoint::class.java
-                        )
-                        val arcRepository = entryPoint.repository()
-
-                        arcRepository.deleteTaskById(taskId = id)
-
-
-                    } catch (e: Exception) {
-                        appLogger.v(TAG, "Error deleting task $id: ${e.message}")
-                    }
-                    delay(60_000L) // every 1 minute
+                try {
+                    appLogger.v(TAG, "Deleting task $id")
+                    arcRepository.deleteTaskById(taskId = id)
+                } catch (e: Exception) {
+                    appLogger.v(TAG, "Error deleting task $id: ${e.message}")
                 }
             }
         }
@@ -123,15 +119,6 @@ class DataUsageTaskService : Service() {
             "Starting data usage task: $taskType url=$url duration=$duration taskId=$taskId"
         )
 
-        // Ensure user granted Usage Access (PACKAGE_USAGE_STATS) for NetworkStatsManager to work
-        if (!isUsageAccessGranted()) {
-            appLogger.v(TAG, "Usage access (PACKAGE_USAGE_STATS) not granted. Launching settings.")
-            launchUsageAccessSettings()
-            stopSelf()
-            return
-        }
-
-
         // 1) Read TOTAL MOBILE data before task
         val startMobile = getTotalMobileDataUsage()
 
@@ -153,16 +140,62 @@ class DataUsageTaskService : Service() {
 
         Log.d(TAG, "Task finished → Used: %.2f MB".format(usedMB))
 
-        // 7) Kill apps via Tasker
-        killAppOrBrowser(taskType)
-
-        // 8) enable wifi
+        // 7) enable wifi
         sendBroadcastToTasker(TaskerTaskType.ENABLE_WIFI, 0)
 
+        // 8) Kill apps via Tasker
+        killAppOrBrowser(taskType)
+
+        val entryPoint = EntryPointAccessors.fromApplication(
+            this@DataUsageTaskService.applicationContext,
+            ArcRepositoryEntryPoint::class.java
+        )
+        val arcRepository = entryPoint.repository()
+
         // 9) Delete task from Room DB
-        deleteTaskById(taskId)
+        deleteTaskById(arcRepository, taskId)
+
+        // 10) save total used Data in MB
+        //fake delay to wait until wifi is enabled back
+        delay(5 * 1000L)
+        val job = serviceScope.async {
+            saveDataUsagesToServer(
+                taskType = taskType,
+                dataUsage = usedMB,
+                usageTime = durationInMilliSeconds / 1000,
+                arcRepository = arcRepository
+            )
+        }
+
+        job.wait()
 
         stopSelf()
+    }
+
+
+    private fun saveDataUsagesToServer(
+        taskType: String,
+        dataUsage: Float,
+        usageTime: Long,
+        arcRepository: ArcRepository
+    ) {
+        serviceScope.launch {
+            try {
+                arcRepository.getLocalDeviceInfo()?.deviceIdInt?.let { deviceId ->
+                    arcRepository.saveDataUsageToServer(
+                        postData = SaveDataUsagePostData(
+                            appName = taskType,
+                            date = TimeUtil.getCurrentDate(),
+                            deviceId = deviceId,
+                            usageDataMb = dataUsage,
+                            usageTimeSeconds = usageTime
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                appLogger.v(TAG, "Exception occurred while saving Data usage: ${e.message}")
+            }
+        }
     }
 
     private fun killAppOrBrowser(taskType: String) {
@@ -233,26 +266,6 @@ class DataUsageTaskService : Service() {
             appLogger.v(TAG, "Failed to launch app/$url: ${e.message}")
         }
     }
-
-
-    private fun isUsageAccessGranted(): Boolean {
-        return try {
-            val now = System.currentTimeMillis()
-            val usm = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-            val list = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, now - 1000L * 60L, now)
-            list != null && list.isNotEmpty()
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    private fun launchUsageAccessSettings() {
-        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        startActivity(intent)
-    }
-
 
     override fun onDestroy() {
         super.onDestroy()

@@ -36,3 +36,16 @@ data class SmsPostData(
     val timeStamp: String?
 
 )
+
+data class SaveDataUsagePostData(
+    @SerializedName("app_name")
+    val appName: String?,
+    @SerializedName("date")
+    val date: String?,
+    @SerializedName("device_id")
+    val deviceId: Int?,
+    @SerializedName("usage_data_mb")
+    val usageDataMb: Float?,
+    @SerializedName("usage_time_seconds")
+    val usageTimeSeconds: Long?
+)
