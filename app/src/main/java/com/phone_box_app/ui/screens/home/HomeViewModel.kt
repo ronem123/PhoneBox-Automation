@@ -97,11 +97,13 @@ class HomeViewModel @Inject constructor(
     fun getDeviceRegisterData(
         deviceId: String,
         countryCode: String,
+        countryName: String,
         mobileNumber: String
     ): DeviceRegistrationPostData {
 
         return DeviceRegistrationPostData(
             countryCode = countryCode,
+            countryName = countryName,
             deviceId = deviceId,
             deviceName = getMyDeviceName(),
             deviceModel = getMyDeviceModel(),
@@ -113,13 +115,25 @@ class HomeViewModel @Inject constructor(
     /**
      * Method to register new device when its first time
      */
-    fun registerDevice(deviceId: String, countryCode: String, mobileNumber: String) {
+    fun registerDevice(
+        deviceId: String,
+        countryCode: String,
+        countryName: String,
+        mobileNumber: String
+    ) {
         viewModelScope.launch {
             if (!networkHelper.isNetworkConnected()) {
                 _registerDeviceResponse.emit(UIState.Failure(throwable = NoInternetException()))
                 return@launch
             }
-            repository.registerDevice(getDeviceRegisterData(deviceId, countryCode, mobileNumber))
+            repository.registerDevice(
+                getDeviceRegisterData(
+                    deviceId,
+                    countryCode,
+                    countryName,
+                    mobileNumber
+                )
+            )
                 .onStart { _registerDeviceResponse.emit(UIState.Loading) }
                 .flowOn(dispatcherProvider.io)
                 .catch { _registerDeviceResponse.emit(UIState.Failure(it)) }

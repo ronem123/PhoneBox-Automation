@@ -17,6 +17,8 @@ data class DeviceRegistrationPostData(
     val deviceName: String,
     @SerializedName("country_code")
     val countryCode: String,
+    @SerializedName("country_name")
+    val countryName: String,
     @SerializedName("device_sim_number")
     val deviceSimNumber: String,
     @SerializedName("profile_name")

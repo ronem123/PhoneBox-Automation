@@ -14,6 +14,7 @@ object ArcTaskType {
     const val TASK_TYPE_YOUTUBE = "youtube"
     const val TASK_TYPE_FACEBOOK = "facebook"
     const val TASK_TYPE_CHROME = "chrome"
+    const val TASK_TYPE_DOWNLOAD = "download"
     const val TASK_TYPE_CALL = "call"
     const val TASK_TYPE_SMS = "sms"
 

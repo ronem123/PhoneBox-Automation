@@ -49,6 +49,7 @@ fun MobileNumberInputDialog(
     )
 
     var selectedCountryCode by remember { mutableStateOf(countryCodes[0]) } // Default country code
+    var selectedCountryName by remember { mutableStateOf(countryCodes[0]) } // Default country name
 
 
 
@@ -84,6 +85,7 @@ fun MobileNumberInputDialog(
                                 text = { Text(code) },
                                 onClick = {
                                     selectedCountryCode = code.substringBefore(" ")
+                                    selectedCountryName = code.substringAfter(" ")
                                     expanded = false
                                 }
                             )
@@ -111,6 +113,7 @@ fun MobileNumberInputDialog(
                         onConfirm(
                             MobileNumberInfo(
                                 countryCode = selectedCountryCode,
+                                countryName = selectedCountryName,
                                 mobileNumber = phoneNumber
                             )
                         )

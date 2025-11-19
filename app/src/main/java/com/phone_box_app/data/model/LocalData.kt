@@ -6,4 +6,8 @@ package com.phone_box_app.data.model
  * @System: Apple M1 Pro
  */
 
-data class MobileNumberInfo(var countryCode: String, var mobileNumber: String)
+data class MobileNumberInfo(
+    var countryCode: String,
+    var countryName: String,
+    var mobileNumber: String
+)

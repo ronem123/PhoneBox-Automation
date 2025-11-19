@@ -1,5 +1,6 @@
 package com.phone_box_app.core.services
 
+//import okhttp3.internal.wait
 import android.app.Service
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
@@ -18,6 +19,7 @@ import com.phone_box_app.data.repository.ArcRepository
 import com.phone_box_app.data.repository.ArcRepositoryEntryPoint
 import com.phone_box_app.util.ArcTaskType
 import com.phone_box_app.util.ArgIntent
+import com.phone_box_app.util.FileDownloadManager
 import com.phone_box_app.util.TaskerTaskType
 import com.phone_box_app.util.TimeUtil
 import com.phone_box_app.util.buildNotification
@@ -25,15 +27,15 @@ import com.phone_box_app.util.createNotificationChannel
 import com.phone_box_app.util.sendBroadcastToTasker
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import okhttp3.internal.wait
+import java.io.File
 import javax.inject.Inject
 
 /**
@@ -119,6 +121,71 @@ class DataUsageTaskService : Service() {
             "Starting data usage task: $taskType url=$url duration=$duration taskId=$taskId"
         )
 
+        when (taskType) {
+            ArcTaskType.TASK_TYPE_YOUTUBE,
+            ArcTaskType.TASK_TYPE_FACEBOOK,
+            ArcTaskType.TASK_TYPE_CHROME -> handleAppTask(url, duration, taskType, taskId)
+
+            ArcTaskType.TASK_TYPE_DOWNLOAD -> handleDownloadTask(url ?: return, taskType, taskId)
+        }
+
+//        stopSelf()
+//
+//
+//        // 1) Read TOTAL MOBILE data before task
+//        val startMobile = getTotalMobileDataUsage()
+//
+//        // 2) Disable WiFi using Tasker
+//        sendBroadcastToTasker(TaskerTaskType.DISABLE_WIFI, 0)
+//
+//        // 3) Launch the required app/browser
+//        launchAppOrUrl(url)
+//
+//        // 4) Wait
+//        val durationInMilliSeconds = duration * 60L * 1000L
+//        delay(durationInMilliSeconds)
+//
+//        // 5) Read TOTAL MOBILE data after
+//        val endMobile = getTotalMobileDataUsage()
+//
+//        // 6) Calculate used MB
+//        val usedMB = (endMobile - startMobile) / (1024f * 1024f)
+//
+//        Log.d(TAG, "Task finished → Used: %.2f MB".format(usedMB))
+//
+//        // 7) enable wifi
+//        sendBroadcastToTasker(TaskerTaskType.ENABLE_WIFI, 0)
+//
+//        // 8) Kill apps via Tasker
+//        killAppOrBrowser(taskType)
+//
+//        val entryPoint = EntryPointAccessors.fromApplication(
+//            this@DataUsageTaskService.applicationContext,
+//            ArcRepositoryEntryPoint::class.java
+//        )
+//        val arcRepository = entryPoint.repository()
+//
+//        // 9) Delete task from Room DB
+//        deleteTaskById(arcRepository, taskId)
+//
+//        // 10) save total used Data in MB
+//        //fake delay to wait until wifi is enabled back
+//        delay(5 * 1000L)
+//        val job = serviceScope.async {
+//            saveDataUsagesToServer(
+//                taskType = taskType,
+//                dataUsage = usedMB,
+//                usageTime = durationInMilliSeconds / 1000,
+//                arcRepository = arcRepository
+//            )
+//        }
+//
+//        job.wait()
+//
+//        stopSelf()
+    }
+
+    private suspend fun handleAppTask(url: String?, duration: Int, taskType: String, taskId: Int) {
         // 1) Read TOTAL MOBILE data before task
         val startMobile = getTotalMobileDataUsage()
 
@@ -157,7 +224,7 @@ class DataUsageTaskService : Service() {
 
         // 10) save total used Data in MB
         //fake delay to wait until wifi is enabled back
-        delay(5 * 1000L)
+        delay(10 * 1000L)
         val job = serviceScope.async {
             saveDataUsagesToServer(
                 taskType = taskType,
@@ -167,9 +234,70 @@ class DataUsageTaskService : Service() {
             )
         }
 
-        job.wait()
+        job.join()
 
         stopSelf()
+    }
+
+    private suspend fun handleDownloadTask(
+        fileUrl: String,
+        taskType: String,
+        taskId: Int
+    ) {
+        // 1️⃣ Disable WiFi for mobile data measurement
+        sendBroadcastToTasker(TaskerTaskType.DISABLE_WIFI, 0)
+
+        try {
+            // 2️⃣ Create FileDownloadManager
+            val downloadManager = FileDownloadManager(this, dispatcherProvider, appLogger)
+
+            // 3️⃣ Use CompletableDeferred to suspend until download completes
+            val downloadedFileDeferred = CompletableDeferred<File?>()
+
+            val downloadJob = downloadManager.downloadFile(
+                fileUrl = fileUrl,
+                onProgress = { progress ->
+                    Log.d(TAG, "Download progress: $progress%")
+                },
+                onComplete = { file ->
+                    downloadedFileDeferred.complete(file)
+                }
+            )
+
+            // Wait until download completes
+            val downloadedFile = downloadedFileDeferred.await()
+            downloadJob.join() // Ensure the coroutine inside download manager completes
+
+            // 4️⃣ Calculate file size in MB
+            val fileSizeMB = downloadedFile?.length()?.toFloat()?.div(1024 * 1024) ?: 0f
+            Log.d(TAG, "File download completed → Size: %.2f MB".format(fileSizeMB))
+
+            // 5️⃣ Access repository
+            val arcRepository = EntryPointAccessors.fromApplication(
+                this@DataUsageTaskService.applicationContext,
+                ArcRepositoryEntryPoint::class.java
+            ).repository()
+
+            // 6️⃣ Save data usage to server
+            saveDataUsagesToServer(
+                taskType = taskType,
+                dataUsage = fileSizeMB,
+                usageTime = 0, // time can be ignored for file download
+                arcRepository = arcRepository
+            )
+
+            // 7️⃣ Delete task from Room DB
+            deleteTaskById(arcRepository, taskId)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Download task failed: ${e.message}")
+        } finally {
+            // 8️⃣ Always re-enable WiFi, whether download succeeded or failed
+            sendBroadcastToTasker(TaskerTaskType.ENABLE_WIFI, 0)
+
+            // 9️⃣ Stop the service
+            stopSelf()
+        }
     }
 
 
@@ -273,8 +401,6 @@ class DataUsageTaskService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-
-
 }
 ///Users/rammandal/Documents/Home/AndroidStudioProjects/Freelance/phone-box-android/app/build/outputs/apk/debug/app-debug.apk
 //adb shell dpm set-device-owner com.phone_box_app/.DeviceAdminReceiverImpl
