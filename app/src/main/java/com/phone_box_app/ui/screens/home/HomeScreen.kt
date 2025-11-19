@@ -63,7 +63,15 @@ fun HomeScreen(
 fun HomeContent(viewModel: HomeViewModel, context: Context) {
 
     var hasAskedPermission by remember { mutableStateOf(false) }
-    var mobileNumberInfo by remember { mutableStateOf(MobileNumberInfo("", "")) }
+    var mobileNumberInfo by remember {
+        mutableStateOf(
+            MobileNumberInfo(
+                countryCode = "",
+                countryName = "",
+                mobileNumber = ""
+            )
+        )
+    }
 
     val deviceInfoState by viewModel.deviceInfo.collectAsStateWithLifecycle()
     val deviceRegisterState by viewModel.registerDeviceResponse.collectAsStateWithLifecycle()
@@ -103,6 +111,7 @@ fun HomeContent(viewModel: HomeViewModel, context: Context) {
                 viewModel.registerDevice(
                     deviceId = getMyDeviceId(context),
                     countryCode = mobileNumberInfo.countryCode,
+                    countryName = mobileNumberInfo.countryName,
                     mobileNumber = mobileNumberInfo.mobileNumber
                 )
             },

@@ -1,5 +1,6 @@
 package com.phone_box_app.ui.components.arch_dialogs
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -85,7 +86,14 @@ fun MobileNumberInputDialog(
                                 text = { Text(code) },
                                 onClick = {
                                     selectedCountryCode = code.substringBefore(" ")
-                                    selectedCountryName = code.substringAfter(" ")
+                                    selectedCountryName =
+                                        code.substringAfter(" ")
+                                            .replace("(", "")
+                                            .replace(")", "")
+                                    Log.v(
+                                        "MobileInputDialog",
+                                        "CountryCode:$selectedCountryCode Country:$selectedCountryName"
+                                    )
                                     expanded = false
                                 }
                             )
