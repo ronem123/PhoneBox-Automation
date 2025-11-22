@@ -225,17 +225,20 @@ class DataUsageTaskService : Service() {
         // 10) save total used Data in MB
         //fake delay to wait until wifi is enabled back
         delay(10 * 1000L)
-        val job = serviceScope.async {
+
+        // 11) Save data usage — suspend until finished
+//        val job = serviceScope.async {
             saveDataUsagesToServer(
                 taskType = taskType,
                 dataUsage = usedMB,
                 usageTime = durationInMilliSeconds / 1000,
                 arcRepository = arcRepository
             )
-        }
+//        }
 
-        job.join()
+//        job.join()
 
+        // 12) Stop service
         stopSelf()
     }
 
@@ -301,28 +304,26 @@ class DataUsageTaskService : Service() {
     }
 
 
-    private fun saveDataUsagesToServer(
+    private suspend fun saveDataUsagesToServer(
         taskType: String,
         dataUsage: Float,
         usageTime: Long,
         arcRepository: ArcRepository
     ) {
-        serviceScope.launch {
-            try {
-                arcRepository.getLocalDeviceInfo()?.deviceIdInt?.let { deviceId ->
-                    arcRepository.saveDataUsageToServer(
-                        postData = SaveDataUsagePostData(
-                            appName = taskType,
-                            date = TimeUtil.getCurrentDate(),
-                            deviceId = deviceId,
-                            usageDataMb = dataUsage,
-                            usageTimeSeconds = usageTime
-                        )
+        try {
+            arcRepository.getLocalDeviceInfo()?.deviceIdInt?.let { deviceId ->
+                arcRepository.saveDataUsageToServer(
+                    postData = SaveDataUsagePostData(
+                        appName = taskType,
+                        date = TimeUtil.getCurrentDate(),
+                        deviceId = deviceId,
+                        usageDataMb = dataUsage,
+                        usageTimeSeconds = usageTime
                     )
-                }
-            } catch (e: Exception) {
-                appLogger.v(TAG, "Exception occurred while saving Data usage: ${e.message}")
+                )
             }
+        } catch (e: Exception) {
+            appLogger.v(TAG, "Exception occurred while saving Data usage: ${e.message}")
         }
     }
 
