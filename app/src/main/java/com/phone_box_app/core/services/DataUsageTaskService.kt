@@ -35,6 +35,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
@@ -74,15 +75,14 @@ class DataUsageTaskService : Service() {
         startForeground(101, notification)
     }
 
-    private fun deleteTaskById(arcRepository: ArcRepository, id: Int?) {
+    private suspend fun deleteTaskById(arcRepository: ArcRepository, id: Int?) {
         id?.let {
-            serviceScope.launch {
-                try {
-                    appLogger.v(TAG, "Deleting task $id")
-                    arcRepository.deleteTaskById(taskId = id)
-                } catch (e: Exception) {
-                    appLogger.v(TAG, "Error deleting task $id: ${e.message}")
-                }
+            try {
+                appLogger.v(TAG, "Deleting task $id")
+                arcRepository.deleteTaskById(taskId = id)
+                appLogger.v(TAG, "Deleted task $id")
+            } catch (e: Exception) {
+                appLogger.v(TAG, "Error deleting task $id: ${e.message}")
             }
         }
     }
@@ -228,12 +228,12 @@ class DataUsageTaskService : Service() {
 
         // 11) Save data usage — suspend until finished
 //        val job = serviceScope.async {
-            saveDataUsagesToServer(
-                taskType = taskType,
-                dataUsage = usedMB,
-                usageTime = durationInMilliSeconds / 1000,
-                arcRepository = arcRepository
-            )
+        saveDataUsagesToServer(
+            taskType = taskType,
+            dataUsage = usedMB,
+            usageTime = durationInMilliSeconds / 1000,
+            arcRepository = arcRepository
+        )
 //        }
 
 //        job.join()
@@ -288,10 +288,8 @@ class DataUsageTaskService : Service() {
                 usageTime = 0, // time can be ignored for file download
                 arcRepository = arcRepository
             )
-
             // 7️⃣ Delete task from Room DB
             deleteTaskById(arcRepository, taskId)
-
         } catch (e: Exception) {
             Log.e(TAG, "Download task failed: ${e.message}")
         } finally {

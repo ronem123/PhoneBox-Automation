@@ -27,7 +27,10 @@ class ArcAlarmReceiver : BroadcastReceiver() {
         Log.d(TAG, "Received for $type")
 
         when (type) {
-            ArcTaskType.TASK_TYPE_YOUTUBE, ArcTaskType.TASK_TYPE_CHROME, ArcTaskType.TASK_TYPE_FACEBOOK -> {
+            ArcTaskType.TASK_TYPE_YOUTUBE,
+            ArcTaskType.TASK_TYPE_CHROME,
+            ArcTaskType.TASK_TYPE_FACEBOOK,
+            ArcTaskType.TASK_TYPE_DOWNLOAD -> {
                 val url = intent.getStringExtra(ArgIntent.ARG_URL)
                 val duration = intent.getIntExtra(ArgIntent.ARG_DURATION, 30)
 
